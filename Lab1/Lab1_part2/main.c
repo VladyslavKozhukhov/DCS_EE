@@ -9,7 +9,7 @@ void main(void)
   P2IE  |= (BIT0+BIT1+BIT2+BIT3);           // P2.0-P2.3 Interrupt enabled
   P2IES |= (BIT0+BIT1+BIT2+BIT3);           // P2.0-P2.3 hi/low edge
   P2IFG &= ~(BIT0+BIT1+BIT2+BIT3);          // P2.0-P2.3 IFG Cleared
-  PBDIR = 0x0000;                           // PB output - P9-LEDs_A, P10-LEDs_B
+  PBDIR = 0xffff;                           // PB output - P9-LEDs_A, P10-LEDs_B
   
   _BIS_SR(LPM4_bits + GIE);                 // LPM4, enable interrupts
 }
@@ -56,7 +56,7 @@ __interrupt void Port2_ISR (void)
   
   else if (P2IFG & BIT2) {                    //P2.2 interruped
     for(i=0;i<5;i++){
-      PBOUT=0;
+      PBOUT =0;
       for(j=0;j<=16;j++){
         wait(500);
         PBOUT = (PBOUT<<1) + 1;               // shift left, add 1
