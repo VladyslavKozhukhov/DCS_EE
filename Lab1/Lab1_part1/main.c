@@ -78,8 +78,13 @@ void FillMatrix(int Mat[T][M]){
 	int i,j;
 	for(i=0 ; i<T ; i++){
 		for(j=0 ; j<M ; j++){
+                  if(i*T+j > 99){
+                    Mat[i][j] = 99;
+                  }
+                  else{
 			Mat[i][j] = i*T+j;		
 		}
 	} 
          
+}
 }
