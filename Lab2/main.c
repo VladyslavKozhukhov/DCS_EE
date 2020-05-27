@@ -62,13 +62,13 @@ __interrupt void Port1_ISR (void)
 		flag = 1;
 		R4 = TBCCR2;						//get current value	
 		R4 = R4 - R5;						//sub between prev value and current value
-		PBDIR = R4*TASSEL_2 ;							//set LEDs
+		PBDIR = R4*TASSEL_2 ;				//set LEDs (DIFF * SMCLK)
 	}
 	else{
 		flag = 0;
 		R5 = TBCCR2;						//get current value	
 		R5 = R5 - R4;						//sub between prev value and current value
-		PBDIR = R5 * TASSEL_2 ;							//set LEDs
+		PBDIR = R5 * TASSEL_2 ;				//set LEDs (DIFF * SMCLK)
 	}
     P1IFG &= ~BIT4;                           // P1.4 IFG Cleared
   }
