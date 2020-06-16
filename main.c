@@ -1,5 +1,4 @@
 #include  <msp430xG46x.h>
-
 char menu[271] ="Menu \n\r 1. Blink RGB LED, color by color with delay of X[ms] \n\r 2. RLC 16 LEDs with delay of X[ms] \n\r 3. RRC 16 LEDs with delay of X[ms] \n\r 4. Get delay time X[ms]: \n\r 5. LAB2 task  part1 \n\r 6. LAB2 task  part2 \n\r 7. Clear all LEDs \n\r 8. Sleep\n\r\0";
 void printMenu();
 int Xms = 500;
@@ -49,7 +48,15 @@ void main(void)
 #pragma vector=USART1RX_VECTOR
 __interrupt void USART1_rx (void)
 { 
-
+  TACTL =0;
+  //TACCTL0 &= ~CCIE;
+  //ADC12CTL0 &= ~ADC12ON;
+  //ADC12CTL0 &= ~ADC12SC;
+ //ADC12CTL0 &= ~ENC;
+  //PBOUT = 0;
+  //TBCTL = 0;
+  TBCTL &= ~(TBSSEL_2+MC_1);
+  P2IE &= ~BIT3;
   if(!flagNewX){
       while (!(IFG2 & UTXIFG1));                // USART1 TX buffer ready?
       selection = RXBUF1;                          // RXBUF1 to TXBUF1
@@ -61,7 +68,6 @@ __interrupt void USART1_rx (void)
           wait(Xms);
           P3OUT = P3OUT<<1;                       // shift left
         }
-        P3OUT = 0;
       break;
      case '2' :
         PBOUT = 1;
@@ -84,25 +90,47 @@ __interrupt void USART1_rx (void)
              break;
 
      case '5' :
+       
+        P2IE |= BIT3;
+        ADC12CTL0 |= ENC;
         ADC12CTL0 &= ~ADC12SC;
         CCTL0 &= ~CCIE;                        // TA0 CCTL0
-        P2IE &= ~BIT3;
+        IE2 |= URXIE1;                            // Enable USART1 RX interrupt
+        TAR = 0;
+        TACTL = TASSEL_2 + MC_1+TAIE;
+        CCTL0 |= CCIE;                        // TA0 CCTL0
+        P2IE |= BIT3;
+        P1IFG &= ~BIT4;                           // P1.4 IFG Cleared
+       /*
+        ADC12CTL0 &= ~ADC12SC;
         PBOUT = 0;
         TAR = 0;
         TACTL |= TAIE;
-        CCTL0 = CCIE;                        // TA0 CCTL0
-        P2IE |= BIT3;
-        P1IFG &= ~BIT4;                           // P1.4 IFG Cleared
+        CCTL0 |= CCIE;                        // TA0 CCTL0
+        P2IE |= BIT3;*/
         break;
      case '6' :
+       TBCTL |= TBSSEL_2+MC_1;
+       /*
+        TBCTL |= TBIE+TBSSEL_2+MC_1;
+        
+        ADC12CTL0 |= ENC;
         ADC12CTL0 &= ~ADC12SC;
         CCTL0 &= ~CCIE;                        // TA0 CCTL0
+        IE2 |= URXIE1;                            // Enable USART1 RX interrupt
+        P2IE &= ~BIT3;
+        PBOUT = 0;
+        ADC12CTL0 |= ADC12SC;                   // Start conversions
+        */
+        ADC12CTL0 &= ~ADC12SC;
+        CCTL0 &= ~CCIE;                        
         P2IE &= ~BIT3;
         PBOUT = 0;
         ADC12CTL0 |= ADC12SC;                   // Start conversions
         break;
      case '7' :
-      
+        PBOUT = 0;
+        P3OUT &= ~0x7;
       break;
      case '8' :
       
@@ -119,11 +147,6 @@ __interrupt void USART1_rx (void)
 
     }
 }
-      
-    
-    
-
-
 
 #pragma vector=PORT1_VECTOR
 __interrupt void Port1_ISR (void)
@@ -144,17 +167,10 @@ void printMenu(){
   }
   IE2 &= ~UTXIE1;
 }
-/*
-#pragma vector=USART1TX_VECTOR
-__interrupt void USART1_tx (void)
-{
-  while (!(IFG2 & UTXIFG1));                // USART1 TX buffer ready?
-  //TXBUF1 = RXBUF1;                          // RXBUF1 to TXBUF1
-}
-*/
+
 void wait(int ms) {
   for(int i=0; i<ms; i++)
-    for(int j=0; j<256; j++);     
+    for(int j=0; j<1048; j++);     
 }
 
 void config()
@@ -162,9 +178,6 @@ void config()
 
   P3SEL |= BIT4;                           // P3 option select
   P3DIR |= BIT4;                           // P3 outputs
-
-
-
   
   // Configure P6.3 as TB2 (Input capture)
   P2SEL &= ~BIT3;                            
@@ -194,30 +207,6 @@ void config()
   
   _BIS_SR(LPM0_bits + GIE);                 // CPU off
 }
-/*
-#pragma vector=PORT1_VECTOR
-__interrupt void Port1_ISR (void)
-{
-  ADC12CTL0 &= ~ADC12SC;
-  CCTL0 &= ~CCIE;                        // TA0 CCTL0
-    P2IE &= ~BIT3;
-    PBOUT = 0;
-    
-  if ((P1IFG & BIT4)) {                       //P1.4 interruped
-        TAR = 0;
-        TACTL |= TAIE;
-        CCTL0 = CCIE;                        // TA0 CCTL0
-        P2IE |= BIT3;
-        P1IFG &= ~BIT4;                           // P1.4 IFG Cleared
-  }
-
- if (P1IFG & BIT5) {                    //P1.5 interruped
-     
-     ADC12CTL0 |= ADC12SC;                   // Start conversions
-	
-    P1IFG &= ~BIT5;                           // P1.5 IFG Cleared
-  }
-}*/
 
 #pragma vector = ADC12_VECTOR
 __interrupt void ADC12_ISR(void)
@@ -241,13 +230,7 @@ __interrupt void ADC12_ISR(void)
 #pragma vector=TIMERB1_VECTOR
 __interrupt void Timer_B (void)
 {
- // P3OUT ^= BIT4;
-  /*
-  ADC12IE &= ~BIT3;
-  P5OUT = counter;                            // Toggle P5.1
-  TBCCTL0 &= ~CCIE;                           // TBCCR0 interrupt enabled
-  */
- //TBR = 0;
+  IE2 |= URXIE1;
   TBCCTL3 &= ~CCIFG;
 }
 
@@ -262,9 +245,11 @@ __interrupt void TIMER_A(void)
 #pragma vector=PORT2_VECTOR
 __interrupt void Port2_ISR (void)
 {
+  IE2 |= URXIE1;
   long tmp = (8000000/((counter*32768)+TAR)); //8388608
   PBOUT = (long)(tmp);
   TAR = 0;                             // reset timer A
   counter=0;
   P2IFG &= ~BIT3;
+
 }
