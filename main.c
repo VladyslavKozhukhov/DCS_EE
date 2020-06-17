@@ -6,14 +6,16 @@ void wait(int ms);
 char selection = '0';
 int flagNewX = 0;
 unsigned int ADCResult = 0;
-int counter = 0;
+long counter = 0;
 void config();
 void main(void)
 {
   volatile unsigned int i;
 
   WDTCTL = WDTPW + WDTHOLD;                 // Stop WDT
-  FLL_CTL0 |= XCAP14PF;                     // Configure load caps
+  FLL_CTL0 |= DCOPLUS + XCAP18PF;           // DCO+ set, freq = xtal x D x N+1
+  SCFI0 |= FN_4;                            // x2 DCO freq, 8MHz nominal DCO
+  SCFQCTL = 121;                            // (121+1) x 32768 x 2 = 7.99 MHz
 
   do
   {
@@ -39,8 +41,6 @@ void main(void)
   U1BR1 = 0x00;                             //
   U1MCTL = 0x4A;                            // Modulation
   U1CTL &= ~SWRST;                          // Initialize USART state machine
- //E2 |=UTXIE1;                            // Enable USART1 RX interrupt
-// URXIE1+
   config();
   _BIS_SR(LPM3_bits + GIE);                 // Enter LPM3 w/ interrupt
 }
@@ -49,12 +49,6 @@ void main(void)
 __interrupt void USART1_rx (void)
 { 
   TACTL =0;
-  //TACCTL0 &= ~CCIE;
-  //ADC12CTL0 &= ~ADC12ON;
-  //ADC12CTL0 &= ~ADC12SC;
- //ADC12CTL0 &= ~ENC;
-  //PBOUT = 0;
-  //TBCTL = 0;
   TBCTL &= ~(TBSSEL_2+MC_1);
   P2IE &= ~BIT3;
   if(!flagNewX){
@@ -90,43 +84,34 @@ __interrupt void USART1_rx (void)
              break;
 
      case '5' :
-       
         P2IE |= BIT3;
+        //ADC
         ADC12CTL0 |= ENC;
         ADC12CTL0 &= ~ADC12SC;
+        //
         CCTL0 &= ~CCIE;                        // TA0 CCTL0
         IE2 |= URXIE1;                            // Enable USART1 RX interrupt
         TAR = 0;
-        TACTL = TASSEL_2 + MC_1+TAIE;
+        TACTL = TASSEL_2 + MC_1;//+TAIE;
         CCTL0 |= CCIE;                        // TA0 CCTL0
         P2IE |= BIT3;
         P1IFG &= ~BIT4;                           // P1.4 IFG Cleared
-       /*
-        ADC12CTL0 &= ~ADC12SC;
-        PBOUT = 0;
-        TAR = 0;
-        TACTL |= TAIE;
-        CCTL0 |= CCIE;                        // TA0 CCTL0
-        P2IE |= BIT3;*/
         break;
-     case '6' :
-       TBCTL |= TBSSEL_2+MC_1;
-       /*
-        TBCTL |= TBIE+TBSSEL_2+MC_1;
         
-        ADC12CTL0 |= ENC;
+     case '6' :
+        // Timer B
+        TBCTL |= TBSSEL_2+MC_1;
+        TBCCTL3 = OUTMOD_7;
+        TBCTL = TBSSEL_2+MC_1;
+        CCTL0 &= ~CCIE;
+        // ADC12
         ADC12CTL0 &= ~ADC12SC;
-        CCTL0 &= ~CCIE;                        // TA0 CCTL0
-        IE2 |= URXIE1;                            // Enable USART1 RX interrupt
-        P2IE &= ~BIT3;
-        PBOUT = 0;
         ADC12CTL0 |= ADC12SC;                   // Start conversions
-        */
-        ADC12CTL0 &= ~ADC12SC;
-        CCTL0 &= ~CCIE;                        
+        // Port2.3                        
         P2IE &= ~BIT3;
+        
         PBOUT = 0;
-        ADC12CTL0 |= ADC12SC;                   // Start conversions
+
         break;
      case '7' :
         PBOUT = 0;
@@ -152,7 +137,7 @@ __interrupt void USART1_rx (void)
 __interrupt void Port1_ISR (void)
 {
   if (P1IFG & BIT4){
-    IE2 &= ~UTXIE1;
+    IE2 &= ~URXIE1;
     printMenu();
     IE2 |= URXIE1;                            // Enable USART1 RX interrupt
     P1IFG &= ~BIT4;
@@ -185,18 +170,8 @@ void config()
   P2IES &= ~BIT3; 
 
   P2IFG &= ~BIT3; 
-  
-    FLL_CTL0 |= DCOPLUS + XCAP18PF;           // DCO+ set, freq = xtal x D x N+1
-    SCFI0 |= FN_4;                            // x2 DCO freq, 8MHz nominal DCO
-    SCFQCTL = 121;                            // (121+1) x 32768 x 2 = 7.99 MHz
-  
-    TACTL = TASSEL_2 + MC_1;        // TA0 CTL = 1011 01000
     
-    CCR0 = 32768;                        // CYCLES PER  1 SEC(CLOCK)
-  //********************************
-  
-  TBCCTL3 = OUTMOD_7;
-  TBCTL = TBSSEL_2+MC_1;
+  CCR0 = 0xffff;                        // CYCLES PER  1 SEC(CLOCK)
   
   P6SEL |= BIT3;
   ADC12CTL1 = SHP + CONSEQ_3; 
@@ -214,7 +189,6 @@ __interrupt void ADC12_ISR(void)
   if (ADC12MEM3 > ADCResult){               	// current sample is grater then before v'in > 1 => P3.4 = 1KHz
     TBCCR0 = 1024-1;                           // Set the period in the Timer B0 Capture/Compare 0 register to 4000 us = 4KHz.
     TBCCR3 = TBCCR0/2;				//The period in microseconds that the power is ON. It translates to a 50% duty cycle.
-    counter++;
   }
   else if (ADC12MEM3 < ADCResult){				// current sample is smaller then before v'in < 1 => P3.4 = 4KHz
     TBCCR0 = 256-1;                           // Set the period in the Timer B0 Capture/Compare 0 register to 4000 us = 4KHz.
@@ -227,29 +201,21 @@ __interrupt void ADC12_ISR(void)
   ADC12CTL0 |= ADC12SC;
 }
 
-#pragma vector=TIMERB1_VECTOR
-__interrupt void Timer_B (void)
-{
-  IE2 |= URXIE1;
-  TBCCTL3 &= ~CCIFG;
-}
+
 
 #pragma vector=TIMERA0_VECTOR
 __interrupt void TIMER_A(void) 
 {
-  counter++;
+  PBOUT = (long)(counter*0.123839);
+  counter = 0;
   P2IE |= BIT3;
-  //TAR=0;
 }
+
+
 
 #pragma vector=PORT2_VECTOR
 __interrupt void Port2_ISR (void)
 {
-  IE2 |= URXIE1;
-  long tmp = (8000000/((counter*32768)+TAR)); //8388608
-  PBOUT = (long)(tmp);
-  TAR = 0;                             // reset timer A
-  counter=0;
+  counter++;
   P2IFG &= ~BIT3;
-
 }
