@@ -1,53 +1,39 @@
 #include "msp430xG46x.h"
+#include <stdint.h>
 
-unsigned char *PTxData;                     // Pointer to TX data
-unsigned char TXByteCtr,ConReg,WRITE=1;
+unsigned char *PTxData;  // Pointer to TX data
+unsigned char *PRxData;// Pointer to RX data
+unsigned char TXByteCtr,RxByteCtr, ConReg,WRITE=1;
 unsigned int delay=0;
-unsigned char TxData[] ={0xA8};              // Table of data to transmit
-unsigned char RxData[3];
-int R_idx;
-int index = 0;
-void wait(int ms);
+unsigned char TxData[] ={0xAC};              // Table of data to transmit
+//uint8_t *PTxData;                     // Pointer to TX data
+//uint8_t *PRxData;                     // Pointer to RX data
+
+uint8_t TxByteCtr;
+uint8_t RxByteCtr;
+void initI2C();
+void I2C_write(uint8_t ByteCtr, uint8_t *TxDat);
+void I2C_read(uint8_t ByteCtr, unsigned char *RxDat);
+
 void main(void)
 {
   WDTCTL = WDTPW + WDTHOLD;                 // Stop WDT
-  P3SEL |= 0x06;                            // Assign I2C pins to USCI_B0 - P3.1=SDA,P3.2=SCL
-  UCB0CTL1 |= UCSWRST;                      // Enable SW reset
-  UCB0CTL0 = UCMST + UCMODE_3 + UCSYNC;     // Master,I2C,synchronous mode
-  UCB0CTL1 = UCSSEL_2 + UCSWRST;            // Use SMCLK, keep SW reset
-  UCB0BR0 = 11;                             // fSCL = SMCLK/11 = 95.3kHz
-  UCB0BR1 = 0;
-  UCB0I2CSA = 0x48;                         // Slave Address is 048h
-  UCB0CTL1 &= ~UCSWRST;                     // Clear SW reset, resume operation
-  IE2 |= UCB0TXIE + UCB0RXIE;                           // Enable TX interrupt
-  WRITE= 1;
-  while (1)
+  initI2C();
+ // IE2 |= UCB0TXIE + UCB0RXIE;                           // Enable TX interrupt
+  unsigned char send1[] = {0xAC,0x02,0xEE};
+  unsigned char send2[] = {0xAA};
+  unsigned char rec[3] ;
+  I2C_write(3,send1);
+ 
+  I2C_read(3,rec);
+  I2C_write(1,send2);
+  I2C_read(2,rec);
+  /*while (1)
   {
     if(WRITE){
        IE2 |= UCB0TXIE;
-       UCB0CTL1 |= UCTR+UCTXSTT;
-       //switch(index){
-       //case 0:
-       if (index%2==0){
-                      // I2C TX, start condition
-         TxData[0]=0xAC;
-         index++;
-       }
-       else if (index%2==1){
-//       case 1:
-         TxData[0]=0x02;
-         index++;
-       }
-//         break;
-       //case 2:
-       else  
-        UCB0CTL1 |= UCTXSTP;
-         //break;
-         
-         
-       
+       UCB0CTL1 |= UCTR + UCTXSTT;             // I2C TX, start condition
        __bis_SR_register(CPUOFF + GIE);        // Enter LPM0 w/ interrupts
-
     } 
     else{ 
        
@@ -58,25 +44,103 @@ void main(void)
                                             // Remain in LPM0 until all data
                                             // is TX'd
     
-  }
+  }*/
 }
+
+
+void initI2C(){
+  P3SEL |= 0x06;                            // Assign I2C pins to USCI_B0 - P3.1=SDA,P3.2=SCL
+  UCB0CTL1 |= UCSWRST;                      // Enable SW reset
+  UCB0CTL0 = UCMST + UCMODE_3 + UCSYNC;     // Master,I2C,synchronous mode
+  UCB0CTL1 = UCSSEL_2 + UCSWRST;            // Use SMCLK, keep SW reset
+  UCB0BR0 = 11;                             // fSCL = SMCLK/11 = 95.3kHz
+  UCB0BR1 = 0;
+  UCB0I2CSA = 0x48;                         // Slave Address is 048h
+  UCB0CTL1 &= ~UCSWRST;                     // Clear SW reset, resume operation  
+}
+
+
+void I2C_write(uint8_t ByteCtr, unsigned char* TxDat) {
+    __disable_interrupt();
+//    isRx = 0;
+    //Interrupt management
+    IE2 &= ~UCB0RXIE;                              // Disable RX interrupt
+//    while (UCB0CTL1 & UCTXSTP);                  // Ensure stop condition got sent
+    IE2 |= UCB0TXIE;                               // Enable TX interrupt
+
+    //Pointer to where data is stored to be sent
+    PTxData = TxDat;                  // TX array start address
+    TxByteCtr = ByteCtr;                           // Load TX byte counter
+
+    //Send start condition
+    //    while (UCB0CTL1 & UCTXSTP);              // Ensure stop condition got sent
+    UCB0CTL1 |= UCTR + UCTXSTT;                    // I2C TX, start condition
+
+    __bis_SR_register(CPUOFF + GIE);               // Enter LPM0 w/ interrupts
+    while (UCB0CTL1 & UCTXSTP);
+}
+void I2C_read(uint8_t ByteCtr, unsigned char *RxDat) {
+    __disable_interrupt();
+//    isRx = 1;
+
+    //Interrupt management
+    IE2 &= ~UCB0TXIE;                              // Disable TX interrupt
+    UCB0CTL1 = UCSSEL_2 + UCSWRST;                 // Use SMCLK, keep SW reset
+    UCB0CTL1 &= ~UCSWRST;                          // Clear SW reset, resume operation
+    IE2 |= UCB0RXIE;                               // Enable RX interrupt
+
+    //Pointer to where data will be stored
+    PRxData =  RxDat;                  // Start of RX buffer
+    RxByteCtr = ByteCtr;                           // Load RX byte counter
+
+    //while (UCB0CTL1 & UCTXSTP);                  // Ensure stop condition got sent
+
+    //If only 1 byte will be read send stop signal as soon as it starts transmission
+    if(RxByteCtr == 1){
+        UCB0CTL1 |= UCTXSTT;                       // I2C start condition
+        while (UCB0CTL1 & UCTXSTT);                // Start condition sent?
+        UCB0CTL1 |= UCTXSTP;                       // I2C stop condition
+        __enable_interrupt();
+    } else {
+        UCB0CTL1 |= UCTXSTT;                       // I2C start condition
+    }
+
+    __bis_SR_register(CPUOFF + GIE);               // Enter LPM0 w/ interrupts
+    while (UCB0CTL1 & UCTXSTP);                    // Ensure stop condition got sent
+}
+
 //------------------------------------------------------------------------------
 #pragma vector = USCIAB0TX_VECTOR
 __interrupt void USCIAB0TX_ISR(void)
 {
-  if (IFG2 & UCB0TXIFG){   
-    UCB0TXBUF = TxData[0];  
-    IE2 &= ~UCB0TXIE;
-    WRITE = 0;
-    __bic_SR_register_on_exit(CPUOFF);      
+  if(IFG2 & UCB0RXIFG){                              // Receive In
+  if (RxByteCtr == 1)
+  {
+     *PRxData = UCB0RXBUF;                           // Move final RX data to PRxData
+     __bic_SR_register_on_exit(CPUOFF);              // Exit LPM0
   }
-  else if(IFG2 & UCB0RXIFG){  
-   while (UCB0CTL1 & UCTXSTT);
-   RxData[R_idx] = UCB0RXBUF;
-   R_idx++;
-//   ConReg = UCB0RXBUF;
-   WRITE = 1;
-    __bic_SR_register_on_exit(CPUOFF);// Exit LPM0
-  } 
-}
+  else
+  {
+      *PRxData++ = UCB0RXBUF;                        // Move RX data to address PRxData
+      if (RxByteCtr == 2)                            // Check whether byte is second to last to be read to send stop condition
+      UCB0CTL1 |= UCTXSTP;
+      __no_operation();
+  }
+  RxByteCtr--;                                       // Decrement RX byte counter
+  }
 
+  else{                                              // Master Transmit
+      if (TxByteCtr)                                 // Check TX byte counter
+  {
+    UCB0TXBUF = *PTxData;                            // Load TX buffer
+    PTxData++;
+    TxByteCtr--;                                     // Decrement TX byte counter
+  }
+  else
+  {
+    UCB0CTL1 |= UCTXSTP;                             // I2C stop condition
+    IFG2 &= ~UCB0TXIFG;                              // Clear USCI_B0 TX int flag
+    __bic_SR_register_on_exit(CPUOFF);               // Exit LPM0
+  }
+ }
+}
