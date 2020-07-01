@@ -1,38 +1,77 @@
-#include  <msp430xG46x.h>
-char menu[271] ="Menu \n\r 1. Blink RGB LED, color by color with delay of X[ms] \n\r 2. RLC 16 LEDs with delay of X[ms] \n\r 3. RRC 16 LEDs with delay of X[ms] \n\r 4. Get delay time X[ms]: \n\r 5. LAB2 task  part1 \n\r 6. LAB2 task  part2 \n\r 7. Clear all LEDs \n\r 8. Sleep\n\r\0";
-void printMenu();
-int Xms = 500;
+#include "msp430xG46x.h"
+#include <stdint.h>
+#include <stdio.h>
+
+char menu[] ="Menu\r\n1. Calculated Temperature\r\n2. Read the measured Temperature, Counter, Slope\r\n3. Sleep\r\n\0";
 void wait(int ms);
-char selection = '0';
-int flagNewX = 0;
-unsigned int ADCResult = 0;
-long counter = 0;
-void config();
+void printStr();
+void initUart();
+void Button();
+unsigned char *PTxData;  // Pointer to TX data
+unsigned char *PRxData;// Pointer to RX data
+unsigned char TXByteCtr,RxByteCtr, ConReg,WRITE=1;
+unsigned int delay=0;
+unsigned char TxData[] ={0xAC};              // Table of data to transmit
+//uint8_t *PTxData;                     // Pointer to TX data
+//uint8_t *PRxData;                     // Pointer to RX data
+int selection =0;
+unsigned char send_init[] = {0xAC,0x02,0xEE};
+unsigned char send_AA_temp[] = {0xAA};
+unsigned char send_A9_slope[] = {0xA9};
+unsigned char send_A8_counter[] = {0xA8};
+unsigned char buffer_1byte[1] ;
+unsigned char buffer_2byte[2] ;
+unsigned char send_TH[] = {0xAC,0x02,0xA1,0x28,0x00,0xA2,0x0A,0x00,0xEE};
+unsigned char send_TL[] = {0xA2,0x0A,0x00};
+unsigned char params[4];
+void ReadAllParam();
+
+uint8_t TxByteCtr;
+uint8_t RxByteCtr;
+void initI2C();
+void I2C_write(uint8_t ByteCtr, uint8_t *TxDat);
+void I2C_read(uint8_t ByteCtr, unsigned char *RxDat);
+
 void main(void)
 {
-  volatile unsigned int i;
-
   WDTCTL = WDTPW + WDTHOLD;                 // Stop WDT
   FLL_CTL0 |= DCOPLUS + XCAP18PF;           // DCO+ set, freq = xtal x D x N+1
   SCFI0 |= FN_4;                            // x2 DCO freq, 8MHz nominal DCO
-  SCFQCTL = 121;                            // (121+1) x 32768 x 2 = 7.99 MHz
+  SCFQCTL = 121;  
+  initI2C();
+ // IE2 |= UCB0TXIE + UCB0RXIE;                           // Enable TX interrupt
+  Button();
+  initUart();
 
-  do
+  /*while (1)
   {
-  IFG1 &= ~OFIFG;                           // Clear OSCFault flag
-  for (i = 0x47FF; i > 0; i--);             // Time for flag to set
-  }
-  while ((IFG1 & OFIFG));                   // OSCFault flag still set?
-
+    if(WRITE){
+       IE2 |= UCB0TXIE;
+       UCB0CTL1 |= UCTR + UCTXSTT;             // I2C TX, start condition
+       __bis_SR_register(CPUOFF + GIE);        // Enter LPM0 w/ interrupts
+    } 
+    else{ 
+       
+       UCB0CTL1 &= ~UCTR;
+       UCB0CTL1 |= UCTXSTT;
+               // Enter LPM0 w/ interrupts
+    }
+                                            // Remain in LPM0 until all data
+                                            // is TX'd
+    
+  }*/
+  
+   __bis_SR_register(CPUOFF + GIE);
+}
+void Button(){
   P1SEL &= ~BIT4;                           // IO
   P1DIR &= ~BIT4;                           // Input
   P1IES &= ~BIT4;                           // interrupt rising edge
-  P1IE |= BIT4;                             // P1.4 Interrupt enable
-  
-  PBDIR = 0xffff;
-  P3DIR |=BIT0+BIT1+BIT2;                    //OUTPUT
-    
-  
+  P1IE |= BIT4;                             // P1.4 Interrupt enable 
+  IE2 |= UTXIE1;
+
+}
+void initUart(){
   P4SEL |= 0x03;                            // P4.1,0 = USART1 TXD/RXD
   ME2 |= UTXE1 + URXE1;                     // Enable USART1 TXD/RXD
   U1CTL |= CHAR;                            // 8-bit character
@@ -41,114 +80,133 @@ void main(void)
   U1BR1 = 0x00;                             //
   U1MCTL = 0x4A;                            // Modulation
   U1CTL &= ~SWRST;                          // Initialize USART state machine
-  config();
-  _BIS_SR(LPM3_bits + GIE);                 // Enter LPM3 w/ interrupt
+}
+void initI2C(){
+  P3SEL |= 0x06;                            // Assign I2C pins to USCI_B0 - P3.1=SDA,P3.2=SCL
+  UCB0CTL1 |= UCSWRST;                      // Enable SW reset
+  UCB0CTL0 = UCMST + UCMODE_3 + UCSYNC;     // Master,I2C,synchronous mode
+  UCB0CTL1 = UCSSEL_2 + UCSWRST;            // Use SMCLK, keep SW reset
+  UCB0BR0 = 88;                             // fSCL = SMCLK/11 = 95.3kHz
+  UCB0BR1 = 0;
+  UCB0I2CSA = 0x48;                         // Slave Address is 048h
+  UCB0CTL1 &= ~UCSWRST;                     // Clear SW reset, resume operation  
+}
+
+
+void I2C_write(uint8_t ByteCtr, unsigned char* TxDat) {
+    __disable_interrupt();
+    IE2 &= ~UCB0RXIE;                              // Disable RX interrupt
+    IE2 |= UCB0TXIE;                               // Enable TX interrupt
+    PTxData = TxDat;                               // TX array start address
+    TxByteCtr = ByteCtr;                           // Load TX byte counter
+    UCB0CTL1 |= UCTR + UCTXSTT;                    // I2C TX, start condition
+    __bis_SR_register(CPUOFF + GIE);               // Enter LPM0 w/ interrupts
+    while (UCB0CTL1 & UCTXSTP);
+}
+void I2C_read(uint8_t ByteCtr, unsigned char *RxDat) {
+    __disable_interrupt();
+    IE2 &= ~UCB0TXIE;                              // Disable TX interrupt
+    UCB0CTL1 = UCSSEL_2 + UCSWRST;                 // Use SMCLK, keep SW reset
+    UCB0CTL1 &= ~UCSWRST;                          // Clear SW reset, resume operation
+    IE2 |= UCB0RXIE;                               // Enable RX interrupt
+    PRxData =  RxDat;                              // Start of RX buffer
+    RxByteCtr = ByteCtr;                           // Load RX byte counter
+    if(RxByteCtr == 1){
+        UCB0CTL1 |= UCTXSTT;                       // I2C start condition
+        while (UCB0CTL1 & UCTXSTT);                // Start condition sent?
+        UCB0CTL1 |= UCTXSTP;                       // I2C stop condition
+        __enable_interrupt();
+    } else {
+        UCB0CTL1 |= UCTXSTT;                       // I2C start condition
+    }
+
+    __bis_SR_register(CPUOFF + GIE);               // Enter LPM0 w/ interrupts
+    while (UCB0CTL1 & UCTXSTP);                    // Ensure stop condition got sent
+}
+
+//------------------------------------------------------------------------------
+#pragma vector = USCIAB0TX_VECTOR
+__interrupt void USCIAB0TX_ISR(void)
+{
+  if(IFG2 & UCB0RXIFG){                              // Receive In
+  if (RxByteCtr == 1)
+  {
+     *PRxData = UCB0RXBUF;                           // Move final RX data to PRxData
+     __bic_SR_register_on_exit(CPUOFF);              // Exit LPM0
+  }
+  else
+  {
+      *PRxData++ = UCB0RXBUF;                        // Move RX data to address PRxData
+      if (RxByteCtr == 2)                            // Check whether byte is second to last to be read to send stop condition
+      UCB0CTL1 |= UCTXSTP;
+      __no_operation();
+  }
+  RxByteCtr--;                                       // Decrement RX byte counter
+  }
+
+  else{                                              // Master Transmit
+      if (TxByteCtr)                                 // Check TX byte counter
+  {
+    UCB0TXBUF = *PTxData;                            // Load TX buffer
+    PTxData++;
+    TxByteCtr--;                                     // Decrement TX byte counter
+  }
+  else
+  {
+    UCB0CTL1 |= UCTXSTP;                             // I2C stop condition
+    IFG2 &= ~UCB0TXIFG;                              // Clear USCI_B0 TX int flag
+    __bic_SR_register_on_exit(CPUOFF);               // Exit LPM0
+  }
+ }
 }
 
 #pragma vector=USART1RX_VECTOR
 __interrupt void USART1_rx (void)
 { 
-  TACTL =0;
-  TBCTL &= ~(TBSSEL_2+MC_1);
-  P2IE &= ~BIT3;
-  if(!flagNewX){
-      while (!(IFG2 & UTXIFG1));                // USART1 TX buffer ready?
-      selection = RXBUF1;                          // RXBUF1 to TXBUF1
+   while (!(IFG2 & UTXIFG1));                // USART1 TX buffer ready?
+   selection = RXBUF1;                          // RXBUF1 to TXBUF1
     switch(selection){
     case '1' :
-        wait(Xms);
-        P3OUT = 1;
-        for(int j=0;j<3;j++){
-          wait(Xms);
-          P3OUT = P3OUT<<1;                       // shift left
-        }
+      ReadAllParam();
+      __disable_interrupt();
+      char str_option1[13];
+      sprintf(str_option1,"temp: %.2f\r\n",(double)params[0]+0.5*(double)params[1]-0.25+((double)params[3]-(double)params[2])/(double)params[3]);
+      printStr(sizeof(str_option1),str_option1);
+      __enable_interrupt();
       break;
      case '2' :
-        PBOUT = 1;
-        for(int j=0;j<16;j++){
-          wait(Xms);
-          PBOUT = PBOUT<<1;                       // shift left
-        }
+       ReadAllParam();
+        __disable_interrupt();
+      char str_option2[64];
+      sprintf(str_option2,"temperatureMSB: %02d, temperatureLSB: %02d, counter: %02d, slope: %02d\r\n",params[0],params[1],params[2],params[3]);
+      printStr(sizeof(str_option2),str_option2);
+      __enable_interrupt();
       break;
      case '3' :
-        PBOUT = 0x8000;
-        for(int j=0;j<16;j++){
-          wait(Xms);
-          PBOUT = PBOUT>>1;                       // shift left
-        }
+       IE2 &= ~URXIE1;
       break;
-     case '4' :
-      flagNewX = 1;
-       IE2 |= URXIE1;
-       Xms = 0;
-             break;
+  
 
-     case '5' :
-        P2IE |= BIT3;
-        //ADC
-        ADC12CTL0 |= ENC;
-        ADC12CTL0 &= ~ADC12SC;
-        //
-        CCTL0 &= ~CCIE;                        // TA0 CCTL0
-        IE2 |= URXIE1;                            // Enable USART1 RX interrupt
-        TAR = 0;
-        TACTL = TASSEL_2 + MC_1;//+TAIE;
-        CCTL0 |= CCIE;                        // TA0 CCTL0
-        P2IE |= BIT3;
-        P1IFG &= ~BIT4;                           // P1.4 IFG Cleared
-        break;
-        
-     case '6' :
-        // Timer B
-        TBCTL |= TBSSEL_2+MC_1;
-        TBCCTL3 = OUTMOD_7;
-        TBCTL = TBSSEL_2+MC_1;
-        CCTL0 &= ~CCIE;
-        // ADC12
-        ADC12CTL0 &= ~ADC12SC;
-        ADC12CTL0 |= ADC12SC;                   // Start conversions
-        // Port2.3                        
-        P2IE &= ~BIT3;
-        
-        PBOUT = 0;
-
-        break;
-     case '7' :
-        PBOUT = 0;
-        P3OUT &= ~0x7;
-      break;
-     case '8' :
-      
-      break;
-   
-    }
   }
-    else{
-      while (!(IFG2 & UTXIFG1));
-      if (RXBUF1==0x0D)
-        flagNewX = 0;
-      else if (RXBUF1>='0' && RXBUF1<='9')
-        Xms = Xms*10 + RXBUF1-'0';
-
-    }
 }
-
 #pragma vector=PORT1_VECTOR
 __interrupt void Port1_ISR (void)
 {
+  wait(10);
   if (P1IFG & BIT4){
     IE2 &= ~URXIE1;
-    printMenu();
+    printStr(sizeof(menu),menu);
     IE2 |= URXIE1;                            // Enable USART1 RX interrupt
     P1IFG &= ~BIT4;
   }
+IFG2=0;
 }
 
-void printMenu(){
+void printStr(int size, char* str){
   IE2 |= UTXIE1;
-  for(int i =0; i<269;++i){
+  for(int i =0; i<size;++i){
      while (!(IFG2 & UTXIFG1));
-     TXBUF1 = menu[i];
+     TXBUF1 = str[i];
   }
   IE2 &= ~UTXIE1;
 }
@@ -158,64 +216,15 @@ void wait(int ms) {
     for(int j=0; j<1048; j++);     
 }
 
-void config()
-{
-
-  P3SEL |= BIT4;                           // P3 option select
-  P3DIR |= BIT4;                           // P3 outputs
-  
-  // Configure P6.3 as TB2 (Input capture)
-  P2SEL &= ~BIT3;                            
-  P2DIR &= ~BIT3;       // P2.3/TB2 Input Capture 
-  P2IES &= ~BIT3; 
-
-  P2IFG &= ~BIT3; 
-    
-  CCR0 = 0xffff;                        // CYCLES PER  1 SEC(CLOCK)
-  
-  P6SEL |= BIT3;
-  ADC12CTL1 = SHP + CONSEQ_3; 
-  ADC12CTL0 = SHT0_8 + MSC + ADC12ON;
-  ADC12IE = 0x08;
-  ADC12MCTL3 = INCH_3;
-  ADC12CTL0 |= ENC;                       // Enable conversions
-  
-  _BIS_SR(LPM0_bits + GIE);                 // CPU off
-}
-
-#pragma vector = ADC12_VECTOR
-__interrupt void ADC12_ISR(void)
-{
-  if (ADC12MEM3 > ADCResult){               	// current sample is grater then before v'in > 1 => P3.4 = 1KHz
-    TBCCR0 = 1024-1;                           // Set the period in the Timer B0 Capture/Compare 0 register to 4000 us = 4KHz.
-    TBCCR3 = TBCCR0/2;				//The period in microseconds that the power is ON. It translates to a 50% duty cycle.
-  }
-  else if (ADC12MEM3 < ADCResult){				// current sample is smaller then before v'in < 1 => P3.4 = 4KHz
-    TBCCR0 = 256-1;                           // Set the period in the Timer B0 Capture/Compare 0 register to 4000 us = 4KHz.
-    TBCCR3 = TBCCR0/2;							//The period in microseconds that the power is ON. It translates to a 50% duty cycle.
-  }
-  else									// current sample is equal to before v'in = 0 => '0' => P3.4 = 0
-    P3OUT &=~BIT4;
-  
-  ADCResult = ADC12MEM3;					// Store current sample
-  ADC12CTL0 |= ADC12SC;
-}
-
-
-
-#pragma vector=TIMERA0_VECTOR
-__interrupt void TIMER_A(void) 
-{
-  PBOUT = (long)(counter*0.123839);
-  counter = 0;
-  P2IE |= BIT3;
-}
-
-
-
-#pragma vector=PORT2_VECTOR
-__interrupt void Port2_ISR (void)
-{
-  counter++;
-  P2IFG &= ~BIT3;
+void ReadAllParam(){
+  I2C_write(2,send_TH);
+  I2C_write(3,&send_TH[2]);
+  I2C_write(3,&send_TH[5]);
+  I2C_write(1,&send_TH[8]);
+  I2C_write(1,send_AA_temp);
+  I2C_read(2,params);
+  I2C_write(1,send_A8_counter);
+  I2C_read(1,&params[2]);
+  I2C_write(1,send_A9_slope);
+  I2C_read(1,&params[3]);
 }
