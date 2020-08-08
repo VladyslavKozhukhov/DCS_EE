@@ -1,7 +1,7 @@
 module data_memory #(
 //Parameters
-parameter DATA_WIDTH = 32, 
-parameter ADDR_WIDTH = 4
+parameter DATA_WIDTH = 16,  // 16bit word size
+parameter ADDR_WIDTH = 14   // 16KB
 ) (
 //Ports
 input clk, 
