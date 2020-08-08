@@ -1,5 +1,5 @@
 module barcode39_top(
-    // inputs
+  // inputs
 	input 	clk,
 	input	start,
 	input	barcode_in,

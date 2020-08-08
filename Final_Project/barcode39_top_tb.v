@@ -6,10 +6,10 @@ reg barcode_in;
 
 wire barcode_out;
 
-// clock generation
+// clock generation - f = 20MHz - T = 50nsec
 initial begin
   clk = 0;
-  forever clk = #20 ~clk;
+  forever clk = #25000 ~clk;  // negate clk every 25nsec
 end
 
 // DUT instantiation
