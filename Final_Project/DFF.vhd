@@ -8,20 +8,22 @@ ENTITY DFF IS
 		D: 	  		IN std_logic_vector(size-1 downto 0);
 		clk:		  IN std_logic;
 		rst:		  IN std_logic;
-		Q: 			  OUT std_logic_vector(size-1 downto 0));
+		Q: 			  BUFFER std_logic_vector(size-1 downto 0));
 end DFF;
 
 architecture dff_behavioral of DFF is
 
 begin
-	process(clk)
+	process(clk, rst)
 	begin
-		if rising_edge(clk) then
-			if rst = '1' then
-				q <= (others => '0');
-			else 
-				q <= d;
-			end if;
+	  if (rst = '1') then  -- async reset
+      Q <= (others => '0');
+    else
+		  if (rising_edge(clk)) then
+			 Q <= D;
+			 else
+			   Q <= Q;
+		  end if;
 		end if;
 	end process;	
 end dff_behavioral;

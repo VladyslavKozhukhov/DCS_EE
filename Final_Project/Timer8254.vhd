@@ -15,13 +15,12 @@ end Timer8254;
 
 architecture Timer8254_behavioral of Timer8254 is
 
-
-
 signal barcode_in_not:    std_logic;
-signal count_out:         std_logic_vector(size-1 downto 0);
-signal rising_DFF_out:    std_logic_vector(size-1 downto 0);
-signal falling_DFF_out:   std_logic_vector(size-1 downto 0);
-signal subtruct_result:   std_logic_vector(size-1 downto 0);
+signal clk_bar:    std_logic;
+signal count_out:         std_logic_vector(size-1 downto 0);-- := (others => '0');
+signal rising_DFF_out:    std_logic_vector(size-1 downto 0);-- := (others => '0');
+signal falling_DFF_out:   std_logic_vector(size-1 downto 0);-- := (others => '0');
+signal subtruct_result:   std_logic_vector(size-1 downto 0);-- := (others => '0');
 
 COMPONENT counter
   GENERIC (size: integer:=16);
@@ -44,13 +43,21 @@ end COMPONENT;
 
 begin
   barcode_in_not<= not barcode_in;
-	process(rising_DFF_out)
-	  begin
-	    --if (rising_edge (clk)) then
-	    
+  --clk_bar <= not clk;
+
+  
+  process(rst, DACK, rising_DFF_out) begin
+    if (rst = '1') then
+      subtruct_result <= (others => '0');
+      DREQ <= '0';
+    elsif (rising_edge(DACK)) then
+      DREQ <= '0';
+    elsif (rising_DFF_out'event) then
       subtruct_result <= std_logic_vector(abs(signed(rising_DFF_out) - signed(falling_DFF_out)));
-      --end if;
-  end process;	
+      DREQ <= '1';
+    end if;
+  end process;
+	
 	
 
 timer_internal_counter: counter
