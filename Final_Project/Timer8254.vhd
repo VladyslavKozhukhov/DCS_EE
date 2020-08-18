@@ -16,7 +16,6 @@ end Timer8254;
 architecture Timer8254_behavioral of Timer8254 is
 
 signal barcode_in_not:    std_logic;
-signal clk_bar:    std_logic;
 signal count_out:         std_logic_vector(size-1 downto 0);-- := (others => '0');
 signal rising_DFF_out:    std_logic_vector(size-1 downto 0);-- := (others => '0');
 signal falling_DFF_out:   std_logic_vector(size-1 downto 0);-- := (others => '0');
@@ -43,9 +42,7 @@ end COMPONENT;
 
 begin
   barcode_in_not<= not barcode_in;
-  --clk_bar <= not clk;
 
-  
   process(rst, DACK, rising_DFF_out) begin
     if (rst = '1') then
       subtruct_result <= (others => '0');
@@ -59,7 +56,6 @@ begin
   end process;
 	
 	
-
 timer_internal_counter: counter
 GENERIC MAP (size=>size)
 PORT MAP (en=>'1', 
