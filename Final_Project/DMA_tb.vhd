@@ -12,9 +12,10 @@ component DMA IS
     address_size: integer
     );
   PORT (	
-		clk:		  IN std_logic;
+		clk:		    IN std_logic;
 		rst:      IN std_logic;
-		DREQ:		  IN std_logic;
+		en:       IN std_logic;
+		DREQ:		   IN std_logic;
 		HOLDA:    IN std_logic;
 		HOLD:     OUT std_logic;
 		DACK:     OUT std_logic;		
@@ -26,13 +27,13 @@ end component;
 
 signal size: integer := 16;
 signal address_size: integer := 7;
-signal clk, rst, DREQ, HOLDA, HOLD, DACK, RW, EOP: std_logic;
+signal clk, rst, en, DREQ, HOLDA, HOLD, DACK, RW, EOP: std_logic;
 signal address:std_logic_vector(address_size-1 downto 0);
 
 begin
 dut: DMA 
 generic map (size=>size, address_size=>address_size) 
-port map (clk => clk, rst=>rst, DREQ=>DREQ, HOLDA=>HOLDA, HOLD=>HOLD, DACK=>DACK, address=>address, RW=>RW, EOP=>EOP);
+port map (clk => clk, rst=>rst, en=>en, DREQ=>DREQ, HOLDA=>HOLDA, HOLD=>HOLD, DACK=>DACK, address=>address, RW=>RW, EOP=>EOP);
   
    -- Clock process definitions
 clock_process :process
@@ -60,14 +61,20 @@ begin
   wait for 50ns;
   DREQ <= '0';
   wait until HOLDA = '0';
+  wait for 50ns;
 end process;
 
 -- Stimulus process
 stim_proc: process
 begin        
     rst <= '1';
+    en <= '1';
     wait for 100 ns;    
     rst <= '0';
+    wait for 500 ns;
+    en <= '0';
+    wait for 100 ns;
+    en <= '1';
    wait;
 end process;
 end Behavioral;

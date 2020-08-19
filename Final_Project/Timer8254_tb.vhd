@@ -11,6 +11,7 @@ component Timer8254
   PORT (	
 		barcode_in: 	  		 IN std_logic;
 		clk:		            IN std_logic;
+		en:						IN std_logic;
 		DACK:		           IN std_logic;
 		rst:              IN std_logic;
 		captured_width: 		OUT std_logic_vector(size-1 downto 0);
@@ -18,13 +19,13 @@ component Timer8254
 end component;
 
 signal size: integer := 16;
-signal barcode_in, DACK, clk, rst, DREQ: std_logic;
+signal barcode_in, DACK, clk, en, rst, DREQ: std_logic;
 signal captured_width:  std_logic_vector(size-1 downto 0);
 
 begin
 dut: Timer8254 
 generic map (size=>size) 
-port map (barcode_in=>barcode_in, clk => clk, DACK=>DACK, rst=>rst, captured_width=>captured_width, DREQ=>DREQ);
+port map (barcode_in=>barcode_in, clk => clk, en=>en, DACK=>DACK, rst=>rst, captured_width=>captured_width, DREQ=>DREQ);
   
 -- Clock process definitions
 clock_process :process
@@ -50,6 +51,7 @@ stim_proc: process
 begin   
     barcode_in <= '1';     
     rst <= '1';
+	en <= '1'; 
    wait for 100 ns;    
     rst <= '0';
 wait for 200ns;
@@ -85,6 +87,7 @@ barcode_in <= '1';
 wait for 200ns;
 barcode_in <= '0';
 wait for 200ns;
+en <= '0';
 barcode_in <= '1';
 wait for 200ns;
 barcode_in <= '1';
@@ -103,12 +106,15 @@ barcode_in <= '1';
 wait for 200ns;
 barcode_in <= '0';
 wait for 200ns;
+en <= '1';
 barcode_in <= '0';
 wait for 200ns;
 barcode_in <= '1';
 wait for 200ns;
+rst <= '1';
 barcode_in <= '0';
 wait for 200ns;
+rst <= '0';
 barcode_in <= '0';
 wait for 200ns;
 barcode_in <= '0';

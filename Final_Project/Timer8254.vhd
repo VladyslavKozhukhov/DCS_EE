@@ -7,6 +7,7 @@ ENTITY Timer8254 IS
   PORT (	
 		barcode_in: 	  		 IN std_logic;
 		clk:		            IN std_logic;
+		en:						IN std_logic;
 		DACK:		           IN std_logic;
 		rst:              IN std_logic;
 		captured_width: 		OUT std_logic_vector(size-1 downto 0);
@@ -47,18 +48,20 @@ begin
     if (rst = '1') then
       subtruct_result <= (others => '0');
       DREQ <= '0';
-    elsif (rising_edge(DACK)) then
-      DREQ <= '0';
-    elsif (rising_DFF_out'event) then
-      subtruct_result <= std_logic_vector(abs(signed(rising_DFF_out) - signed(falling_DFF_out)));
-      DREQ <= '1';
-    end if;
+	elsif (en = '1') then
+		if (rising_edge(DACK)) then
+		  DREQ <= '0';
+		elsif (rising_DFF_out'event) then
+		  subtruct_result <= std_logic_vector(abs(signed(rising_DFF_out) - signed(falling_DFF_out)));
+		  DREQ <= '1';
+		end if;
+	end if;
   end process;
 	
 	
 timer_internal_counter: counter
 GENERIC MAP (size=>size)
-PORT MAP (en=>'1', 
+PORT MAP (en=>en, 
           clk=>clk,
           rst=>rst,
           count_out=>count_out);
