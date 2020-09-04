@@ -4,8 +4,7 @@ use ieee.numeric_std.all;
 
 ENTITY interrupt_controller IS
   GENERIC (
-    size: integer:=16;
-    address_size: integer:=7
+    size: integer:=16
     );
   PORT (	
 		clk:		    IN std_logic;
