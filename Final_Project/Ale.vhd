@@ -18,8 +18,6 @@ BEGIN
 	PROCESS (reset, addr_data,en)
 		BEGIN
 		IF (reset = '0') THEN
-
-			
 			addr_out_tmp <= (others => '0');
 		ELSIF (en = '1') then
 			addr_out_tmp <= addr_data;

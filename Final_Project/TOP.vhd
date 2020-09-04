@@ -51,7 +51,9 @@ ARCHITECTURE arc_TOP OF TOP IS
 			BHE : IN STD_LOGIC;
 			address : IN std_logic_vector(12 DOWNTO 0);-- INTEGER RANGE 0 TO size-1; --address to write/read
 			data_in : IN STD_LOGIC_VECTOR(d_width - 1 DOWNTO 0); --input data to write
-		data_out : OUT STD_LOGIC_VECTOR(d_width - 1 DOWNTO 0)); --output data read
+		data_out : OUT STD_LOGIC_VECTOR(d_width - 1 DOWNTO 0);
+		reset       : IN STD_LOGIC);
+		--output data read
 	END COMPONENT;
  
  
@@ -149,7 +151,6 @@ end COMPONENT;
 	SIGNAL EOP_tmp: std_logic;
 	SIGNAL barcode_in_tmp: std_logic;
 	SIGNAL barcode_in_not_tmp: std_logic;
-
 	signal Mem_out:STD_LOGIC_VECTOR(width_bus_AD-1 DOWNTO 0);
 	
 
@@ -163,6 +164,14 @@ BEGIN
 	barcode_in_tmp<='1' When barcode_in='1' else '0';
 	barcode_in_not_tmp<= '0' when barcode_in ='1' else '1';
 	
+	process(clk)
+	begin
+		if (rising_edge(clk) and STRSCAN ='1') then
+			barcode_out<=Mem_out;
+		else
+			barcode_out <= (others => 'Z');
+		end if;
+	end process;
 
 
 White: Timer8254
@@ -206,7 +215,7 @@ DMA_isnt: DMA
 			DACK1=>DACK1,
 			HOLDA =>HOLDA,
 			HOLD =>HOLD,
-			address =>BUS_AD,
+			address =>BUS_AD(12 downto 0),
 			RW =>RW,
 			ALE=>ALE_Dma,
 			EOP =>EOP_tmp
@@ -244,13 +253,14 @@ Dmem: ram
 			BHE =>BHE,
 			address =>BUS_AD(12 downto 0),-- INTEGER RANGE 0 TO size-1; --address to write/read
 			data_in =>BUS_AD,--input data to write
-		data_out => Mem_out); --output data read
+		data_out => Mem_out,
+				reset =>reset); --output data read
  
 ALE_MD:ale_module
 GENERIC map(size=>width_bus_AD)
   PORT map(	
 		addr_data=>BUS_AD,
-		en=>ALE,--/ALE_Dma??,
+		en=>ALE_Dma,--ALE??,
 		reset=>reset,
 		addr_out=>ALE_out);
  

@@ -8,15 +8,17 @@ ARCHITECTURE Behavioral OF TOP_tb IS
 
 	COMPONENT TOP IS
 		GENERIC (
-			width_bus_AD : INTEGER;
-			address_size : INTEGER
+width_bus_AD : INTEGER;
+address_size : INTEGER;
+mem_size : INTEGER;
+SEL_WIDTH   :NATURAL
 		);
 		PORT (
 			STRSCAN : IN std_logic;
 			clk : IN std_logic;
 			reset : IN std_logic;
 			barcode_in : IN std_logic;
-			HLDA : IN std_logic;
+			HOLDA : IN std_logic;
 			INT : IN std_logic;
 			INTA : IN std_logic;
 			ALE : IN std_logic;
@@ -29,29 +31,74 @@ ARCHITECTURE Behavioral OF TOP_tb IS
 
 	SIGNAL width_bus_AD : INTEGER := 16;
 	SIGNAL address_size : INTEGER := 13;
-	SIGNAL STRSCAN, clk, reset, barcode_in, HLDA, INT, INTA, ALE, BHE, HOLD, EOP : std_logic;
+
+SIGNAL mem_size : INTEGER:=8000;
+ SIGNAL SEL_WIDTH   :NATURAL := 3;
+	SIGNAL STRSCAN, clk, reset, barcode_in, HOLDA, INT, INTA, ALE, BHE, HOLD, EOP : std_logic;
 	SIGNAL barcode_out : std_logic_vector(15 DOWNTO 0);
 
 BEGIN
 	dut : TOP
 	GENERIC MAP(
 		width_bus_AD => width_bus_AD,
-		address_size => address_size
+		address_size => address_size,
+		mem_size=>mem_size,
+		SEL_WIDTH=>SEL_WIDTH
 	)
 	PORT MAP(
 		STRSCAN => STRSCAN,
 		clk => clk,
 		reset => reset,
 		barcode_in => barcode_in,
-		HLDA => HLDA,
+		HOLDA => HOLDA,
 		INT => INT,
 		INTA => INTA,
 		ALE => ALE,
 		BHE => BHE,
 		barcode_out => barcode_out,
 		HOLD => HOLD,
-		EOP => EOP,
+		EOP => EOP
 	);
+---input fake----
+input_proc : PROCESS
+begin
+barcode_in <= '1';
+wait for 200ns;
+barcode_in <= '1';
+wait for 200ns;
+barcode_in <= '1';
+wait for 200ns;
+barcode_in <= '1';
+wait for 200ns;
+barcode_in <= '1';
+wait for 200ns;
+barcode_in <= '1';
+------
+wait for 200ns;
+barcode_in <= '0';
+wait for 200ns;
+barcode_in <= '1';
+wait for 200ns;
+barcode_in <= '0';
+wait for 200ns;
+barcode_in <= '1';
+wait for 200ns;
+barcode_in <= '1';
+wait for 200ns;
+barcode_in <= '0';
+wait for 200ns;
+barcode_in <= '0';
+wait for 200ns;
+barcode_in <= '1';
+wait for 200ns;
+barcode_in <= '0';
+wait for 200ns;
+barcode_in <= '0';
+wait for 200ns;
+barcode_in <= '1';
+wait for 200ns;
+barcode_in <= '0';
+end PROCESS;
 
 	-- Clock process definitions
 	clock_process : PROCESS
@@ -66,17 +113,18 @@ BEGIN
 	BEGIN
 		WAIT FOR 50 ns;
 		IF (HOLD = '1') THEN
-			HLDA <= '1';
+			HOLDA <= '1';
 		ELSE
-			HLDA <= '0';
+			HOLDA <= '0';
 		END IF;
 	END PROCESS;
 
 	gen_INTA : PROCESS
 	BEGIN
 		WAIT FOR 50 ns;
-		IF (INT = '1') THEN
+		IF (EOP = '1') THEN
 			INTA <= '1';
+			STRSCAN <= '0';
 		ELSE
 			INTA <= '0';
 		END IF;
@@ -89,7 +137,7 @@ BEGIN
 		reset <= '0';
 		WAIT FOR 25 ns;
 		STRSCAN <= '1';
-
+		wait;
 	END PROCESS;
 
 END Behavioral;
