@@ -13,7 +13,8 @@ ENTITY ram IS
 		BHE      : in STD_LOGIC;
 		address		:	IN	std_logic_vector(12 downto 0);--	INTEGER RANGE 0 TO size-1;             --address to write/read
 		data_in	:	IN		STD_LOGIC_VECTOR(d_width-1 DOWNTO 0);  --input data to write
-		data_out	:	OUT	STD_LOGIC_VECTOR(d_width-1 DOWNTO 0)); --output data read
+		data_out	:	OUT	STD_LOGIC_VECTOR(d_width-1 DOWNTO 0); --output data read
+		reset       : IN STD_LOGIC);
 END ram;
 
 ARCHITECTURE logic OF ram IS
@@ -25,16 +26,22 @@ ARCHITECTURE logic OF ram IS
 	signal tmp_data : STD_LOGIC_VECTOR(d_width-1 DOWNTO 0);
 BEGIN
 
-	PROCESS(clk)
+	PROCESS(clk,reset)
 	BEGIN
-		IF(clk'EVENT AND clk = '1') THEN
+	IF(reset = '1') then
+			FOR i IN 0 TO 8000 LOOP
+				ram(i) <= (others => '0');
+			END LOOP;
+			data_out<= (others => '0');
+
+		elsif(clk'EVENT AND clk = '1') THEN
 			enable_odd<=cs5 and address(0);
 			enable_even<=cs5 and BHE;
 			IF(wr_ena = '1' and enable_odd ='1' and  enable_even ='1') THEN     --write enable is asserted
 				ram(to_integer(unsigned(address))) <= data_in;  --write input data into memory
 			elsif(wr_ena = '1' and enable_odd ='1') then -- LO
-			tmp_data <= ram(to_integer(unsigned(address)));
-			tmp_data<=tmp_data(15 downto 8) & data_in(7 downto 0);
+				tmp_data <= ram(to_integer(unsigned(address)));
+				tmp_data<=tmp_data(15 downto 8) & data_in(7 downto 0);
 				ram(to_integer(unsigned(address))) <=tmp_data;
 			elsif( wr_ena = '1' and enable_even ='1') then  -- HI
 				tmp_data <= ram(to_integer(unsigned(address)));
