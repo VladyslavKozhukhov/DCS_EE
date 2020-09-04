@@ -1,4 +1,4 @@
-LIBRARY IEEE;
+ LIBRARY IEEE;
 USE IEEE.STD_LOGIC_1164.ALL;
 USE ieee.numeric_std.ALL;
 
@@ -15,21 +15,21 @@ ENTITY DMA IS
 		DREQ1 : IN std_logic;
 		HOLDA : IN std_logic;
 		HOLD : OUT std_logic;
-		DACK0 : OUT std_logic; 
-		DACK1 : OUT std_logic; 
+		DACK0 : OUT std_logic;
+		DACK1 : OUT std_logic;
 		address : OUT std_logic_vector(address_size - 1 DOWNTO 0);
 		RW : OUT std_logic;
-		ALE : OUT std_logic;
+		ALE : BUFFER std_logic;
 		EOP : OUT std_logic
 	);
 END DMA;
 
 ARCHITECTURE DMA_behavioral OF DMA IS
- 
+
 BEGIN
 	PROCESS (clk)
-	VARIABLE transfers_count : INTEGER := 0;
-	CONSTANT MAX_DMA_REQUESTS : INTEGER :=5 ;--99;
+		VARIABLE transfers_count : INTEGER := 0;
+		CONSTANT MAX_DMA_REQUESTS : INTEGER := 50;--99;
 	BEGIN
 		IF (rst = '1') THEN
 			HOLD <= '0';
@@ -38,6 +38,8 @@ BEGIN
 			address <= (OTHERS => 'Z'); -- disconnect from bus
 			RW <= '0';
 			transfers_count := 0; -- reset counter
+			ALE <= '0';
+			EOP <= '0';
 		ELSE
 			IF (en = '1') THEN
 				IF (rising_edge(clk)) THEN
@@ -52,13 +54,9 @@ BEGIN
 						RW <= '0';
 					ELSIF ((DREQ0 = '1' OR DREQ1 = '1') AND HOLDA = '1') THEN
 						HOLD <= '0';
-						IF (DREQ0 = '1') THEN
-							DACK0 <= '1';
-						ELSE -- DREQ1 == '1'
-							DACK1 <= '1';
-						END IF;
 						address <= std_logic_vector(to_unsigned(transfers_count, address'length)); -- put MEM address
-						RW <= '1';
+						ALE <= '1';
+						RW <= '0';
 						transfers_count := transfers_count + 1;
 						-- EOP
 						IF (transfers_count = MAX_DMA_REQUESTS) THEN
@@ -67,6 +65,23 @@ BEGIN
 						ELSE
 							EOP <= '0';
 						END IF;
+					END IF;
+				ELSE
+					HOLD <= '0';
+					DACK0 <= '0';
+					DACK1 <= '0';
+					address <= (OTHERS => 'Z'); -- disconnect from bus
+					RW <= '0';
+				END IF;
+				IF (falling_edge(clk)) THEN
+					IF (ALE = '1') THEN
+						IF (DREQ0 = '1') THEN
+							DACK0 <= '1';
+						ELSE -- DREQ1 == '1'
+							DACK1 <= '1';
+						END IF;
+						RW <= '1';
+						ALE <= '0';
 					END IF;
 				END IF;
 			ELSE -- if idle
@@ -78,5 +93,4 @@ BEGIN
 			END IF;
 		END IF;
 	END PROCESS;
- 
 END DMA_behavioral;

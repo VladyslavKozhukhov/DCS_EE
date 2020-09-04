@@ -75,29 +75,32 @@ wait for 200ns;
 barcode_in <= '1';
 ------
 wait for 200ns;
-barcode_in <= '0';
+barcode_in <= '0';  --4
+wait for 200ns;
+barcode_in <= '1';  --4
+wait for 200ns;
+barcode_in <= '0';  --4
 wait for 200ns;
 barcode_in <= '1';
 wait for 200ns;
-barcode_in <= '0';
-wait for 200ns;
-barcode_in <= '1';
-wait for 200ns;
-barcode_in <= '1';
+barcode_in <= '1';  --8
 wait for 200ns;
 barcode_in <= '0';
 wait for 200ns;
-barcode_in <= '0';
+barcode_in <= '0';  --8
 wait for 200ns;
-barcode_in <= '1';
-wait for 200ns;
-barcode_in <= '0';
+barcode_in <= '1';  --4
 wait for 200ns;
 barcode_in <= '0';
 wait for 200ns;
-barcode_in <= '1';
+barcode_in <= '0';  --8
 wait for 200ns;
-barcode_in <= '0';
+barcode_in <= '1';  --4
+wait for 200ns;
+barcode_in <= '0';  --4
+wait for 200ns;
+barcode_in <= '1';  --4
+wait;
 end PROCESS;
 
 	-- Clock process definitions
