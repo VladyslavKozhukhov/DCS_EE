@@ -1,5 +1,6 @@
 LIBRARY ieee;
 USE ieee.std_logic_1164.ALL;
+USE IEEE.Numeric_Std.ALL;
 
 ENTITY TOP_tb IS
 END TOP_tb;
@@ -54,6 +55,7 @@ SIGNAL mem_size : INTEGER:=8000;
 
 	SIGNAL en_write:std_logic:='0';
 signal input_read:  std_logic;
+		signal addr_count : INTEGER := 0;
 
 BEGIN
 STRSCAN<='1' when reset = '0' and EOP = '0' else 
@@ -95,18 +97,31 @@ WD:writeFile PORT MAP(barcode_out, clk,en_write );
 	ALE<='0';
 	BUS_AD<=(others =>'Z');
 	wait until EOP = '1';
-	ALE <='1';
-	BUS_AD<=x"0002";
-	wait for 50 ns;
---	mem_out<=barcode_out;
-	ALE <='0';
-	en_write<='1';
-	wait for 50 ns;
+	for I in 0 to 20 loop
 		en_write<='0';
 		ALE <='1';
-	BUS_AD<=x"0004";
-wait for 50 ns;
-	en_write<='1';
+		BUS_AD<=std_logic_vector(to_unsigned(addr_count, BUS_AD'length));
+		wait for 50 ns;
+		addr_count<=addr_count+2;
+		ALE <='0';
+		en_write<='1';
+		wait for 50 ns;
+		if(I =20) then
+		en_write <='0';
+		end if;
+	end loop;
+	--en_write<='0';
+	--ALE <='1';
+	--BUS_AD<=x"0002";
+	--wait for 50 ns;
+	--ALE <='0';
+	--en_write<='1';
+	--wait for 50 ns;
+	--	en_write<='0';
+	--	ALE <='1';
+	--BUS_AD<=x"0004";
+--wait for 50 ns;
+	--en_write<='1';
 
 	wait;
 	end PROCESS;
