@@ -20,6 +20,7 @@ ENTITY TOP IS
 		INTA : IN std_logic;
 		ALE : IN std_logic;
 		BHE : IN std_logic;
+		BUS_AD : inout STD_LOGIC_VECTOR(width_bus_AD - 1 DOWNTO 0);
 		barcode_out : OUT std_logic_vector(15 DOWNTO 0);
 		HOLD : OUT std_logic;
 		EOP : OUT std_logic
@@ -146,11 +147,8 @@ END COMPONENT;
 			addr_out : OUT std_logic_vector(size - 1 DOWNTO 0));
 	END COMPONENT;
 	---------------------------------------------------------------------------------------------
-	SIGNAL BUS_AD : STD_LOGIC_VECTOR(width_bus_AD - 1 DOWNTO 0);
-	SIGNAL BUS_AD_MEM : STD_LOGIC_VECTOR(width_bus_AD - 1 DOWNTO 0);
-	SIGNAL BUS_AD_TIMER : STD_LOGIC_VECTOR(width_bus_AD - 1 DOWNTO 0);
-	SIGNAL BUS_AD_ADDR : STD_LOGIC_VECTOR(width_bus_AD - 1 DOWNTO 0);
-	SIGNAL BUS_Control : STD_LOGIC_VECTOR(width_bus_AD - 1 DOWNTO 0);
+	--SIGNAL BUS_AD : STD_LOGIC_VECTOR(width_bus_AD - 1 DOWNTO 0);
+	--SIGNAL BUS_AD_tmp : STD_LOGIC_VECTOR(width_bus_AD - 1 DOWNTO 0);
 	SIGNAL ALE_out : STD_LOGIC_VECTOR(width_bus_AD - 1 DOWNTO 0);
 	SIGNAL decoder_out : STD_LOGIC_VECTOR(2 ** SEL_WIDTH - 1 DOWNTO 0);
 	SIGNAL DACK0 : std_logic;
@@ -186,24 +184,24 @@ ALE_IN<=ALE_Dma or ALE;
 	cs5 <= decoder_out(4);
 	barcode_in_tmp <= '1' WHEN barcode_in = '1' ELSE '0';
 	barcode_in_not_tmp <= '0' WHEN barcode_in = '1' ELSE '1';
+	barcode_out <= Mem_out;
 
-	PROCESS (clk )
-	BEGIN
-		--IF (EOP_tmp ='1' ) THEN
+	--PROCESS (clk )
+--	BEGIN
+--		IF (ALE ='1' ) THEN
 		--	iF(delay=7) then
 				--BUS_AD<=x"0002";
 		--		ALE_Dma<='1';
 		--		wait for 25ns;
-		--		barcode_out <= Mem_out;
----wait;
+----wait;
 			--	delay <= 0;
 			--else
 				--delay <=delay +1;
 			--end if;
 		--ELSE
-			barcode_out <= (OTHERS => 'Z');
-		--END IF;
-	END PROCESS;
+			--barcode_out <= (OTHERS => 'Z');
+	--	END IF;
+	--END PROCESS;
 	White : Timer8254
 	GENERIC MAP(size => width_bus_AD)
 	PORT MAP(

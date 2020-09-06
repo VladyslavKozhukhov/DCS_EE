@@ -22,6 +22,7 @@ SEL_WIDTH   :NATURAL
 			INT : IN std_logic;
 			INTA : IN std_logic;
 			ALE : IN std_logic;
+			BUS_AD : inout STD_LOGIC_VECTOR(width_bus_AD - 1 DOWNTO 0);
 			BHE : IN std_logic;
 			barcode_out : OUT std_logic_vector(15 DOWNTO 0);
 			HOLD : OUT std_logic;
@@ -36,7 +37,8 @@ END component;
 component writeFile 
 	PORT(
 input_top : in std_logic_vector(15 DOWNTO 0);
-clk : in std_logic
+clk : in std_logic;
+en : in std_logic
 	);
 END component;
 	SIGNAL width_bus_AD : INTEGER := 16;
@@ -48,6 +50,9 @@ SIGNAL mem_size : INTEGER:=8000;
 	SIGNAL barcode_out : std_logic_vector(15 DOWNTO 0);
 	signal mem_out:std_logic_vector(15 DOWNTO 0);
 	SIGNAL STRSCAN:std_logic:='0';
+	SIGNAL BUS_AD:STD_LOGIC_VECTOR(width_bus_AD - 1 DOWNTO 0);
+
+	SIGNAL en_write:std_logic:='0';
 signal input_read:  std_logic;
 
 BEGIN
@@ -74,12 +79,37 @@ RD:readFile PORT MAP(barcode_in);
 		HOLDA => HOLDA,
 		INT => INT,
 		INTA => INTA,
-		ALE => '0',
+		ALE => ALE,
 		BHE => BHE,
+		BUS_AD =>BUS_AD,
 		barcode_out => barcode_out,
 		HOLD => HOLD,
 		EOP => EOP
 	);
+
+	
+WD:writeFile PORT MAP(barcode_out, clk,en_write );
+
+	read_procc: PROCESS
+	BEGIN 
+	ALE<='0';
+	BUS_AD<=(others =>'Z');
+	wait until EOP = '1';
+	ALE <='1';
+	BUS_AD<=x"0002";
+	wait for 50 ns;
+--	mem_out<=barcode_out;
+	ALE <='0';
+	en_write<='1';
+	wait for 50 ns;
+		en_write<='0';
+		ALE <='1';
+	BUS_AD<=x"0004";
+wait for 50 ns;
+	en_write<='1';
+
+	wait;
+	end PROCESS;
 
 	-- Clock process definitions
 	clock_process : PROCESS
@@ -132,12 +162,6 @@ RD:readFile PORT MAP(barcode_in);
 		wait;
 	END PROCESS;
 	
-	write_process: PROCESS
-	BEGIN
-	mem_out<=barcode_out;
-	WAIT FOR 200 ns;
-	end PROCESS;
 	
-WD:writeFile PORT MAP(barcode_out, clk );
 
 END Behavioral;
