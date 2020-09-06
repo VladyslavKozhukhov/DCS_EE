@@ -74,7 +74,7 @@ RD:readFile PORT MAP(barcode_in);
 		HOLDA => HOLDA,
 		INT => INT,
 		INTA => INTA,
-		ALE => ALE,
+		ALE => '0',
 		BHE => BHE,
 		barcode_out => barcode_out,
 		HOLD => HOLD,

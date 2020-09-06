@@ -141,6 +141,7 @@ END COMPONENT;
 		PORT (
 			addr_data : IN std_logic_vector(size - 1 DOWNTO 0);
 			en : IN std_logic;
+			en_main : IN std_logic;
 			reset : IN std_logic;
 			addr_out : OUT std_logic_vector(size - 1 DOWNTO 0));
 	END COMPONENT;
@@ -175,7 +176,7 @@ BEGIN
 	--	  BUS_AD_ADDR when   else
 		--  BUS_AD_TIMER when  else
 		 -- OTHERS => '0';
---ALE_IN<=ALE when EOP_tmp ='1' else
+ALE_IN<=ALE_Dma or ALE;
 	---	ALE_Dma;
 		  
 	cs1 <= decoder_out(0);
@@ -296,6 +297,7 @@ BEGIN
 	PORT MAP(
 		addr_data => BUS_AD,
 		en => ALE_Dma, --ALE_Dma??,
+		en_main=> ALE,
 		reset => reset,
 		addr_out => ALE_out);
 END arc_TOP;
