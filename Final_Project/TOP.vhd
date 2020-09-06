@@ -1,6 +1,7 @@
 LIBRARY ieee;
 USE ieee.std_logic_1164.ALL;
 USE std.textio.ALL;
+use ieee.numeric_std.all;
 
 ENTITY TOP IS
 	GENERIC (
@@ -114,6 +115,27 @@ ARCHITECTURE arc_TOP OF TOP IS
 
 		);
 	END COMPONENT;
+	
+	
+	
+	COMPONENT Memory_interleaving 
+	GENERIC (
+		d_width : INTEGER := 16; --width of each data word
+		add_width : INTEGER := 13;
+		size : INTEGER := 8000); --number of data words the memory can store
+	PORT (
+		clk : IN STD_LOGIC; --system clock
+		wr_ena : IN STD_LOGIC; --write enable
+		cs5 : IN STD_LOGIC;
+		BHE : IN STD_LOGIC;
+		address : IN std_logic_vector(add_width - 1 DOWNTO 0);--	INTEGER RANGE 0 TO size-1;             --address to write/read
+		data_in : IN STD_LOGIC_VECTOR(d_width - 1 DOWNTO 0); --input data to write
+		data_out : OUT STD_LOGIC_VECTOR(d_width - 1 DOWNTO 0); --output data read
+		reset : IN STD_LOGIC);
+END COMPONENT;
+	
+	
+	
 	COMPONENT ale_module
 		GENERIC (size : INTEGER := 16);
 		PORT (
@@ -124,7 +146,9 @@ ARCHITECTURE arc_TOP OF TOP IS
 	END COMPONENT;
 	---------------------------------------------------------------------------------------------
 	SIGNAL BUS_AD : STD_LOGIC_VECTOR(width_bus_AD - 1 DOWNTO 0);
-	SIGNAL BUS_AD1 : STD_LOGIC_VECTOR(width_bus_AD - 1 DOWNTO 0);
+	SIGNAL BUS_AD_MEM : STD_LOGIC_VECTOR(width_bus_AD - 1 DOWNTO 0);
+	SIGNAL BUS_AD_TIMER : STD_LOGIC_VECTOR(width_bus_AD - 1 DOWNTO 0);
+	SIGNAL BUS_AD_ADDR : STD_LOGIC_VECTOR(width_bus_AD - 1 DOWNTO 0);
 	SIGNAL BUS_Control : STD_LOGIC_VECTOR(width_bus_AD - 1 DOWNTO 0);
 	SIGNAL ALE_out : STD_LOGIC_VECTOR(width_bus_AD - 1 DOWNTO 0);
 	SIGNAL decoder_out : STD_LOGIC_VECTOR(2 ** SEL_WIDTH - 1 DOWNTO 0);
@@ -133,6 +157,7 @@ ARCHITECTURE arc_TOP OF TOP IS
 	SIGNAL DREQ0 : std_logic;
 	SIGNAL DREQ1 : std_logic;
 	SIGNAL ALE_Dma : std_logic;
+	SIGNAL ALE_IN : std_logic;
 	SIGNAL cs1 : std_logic;
 	SIGNAL cs2 : std_logic;
 	SIGNAL cs3 : std_logic;
@@ -143,8 +168,16 @@ ARCHITECTURE arc_TOP OF TOP IS
 	SIGNAL barcode_in_tmp : std_logic;
 	SIGNAL barcode_in_not_tmp : std_logic;
 	SIGNAL Mem_out : STD_LOGIC_VECTOR(width_bus_AD - 1 DOWNTO 0);
+	signal delay : integer :=0;
 BEGIN
 
+--BUS_AD<=  BUS_AD_MEM when   else
+	--	  BUS_AD_ADDR when   else
+		--  BUS_AD_TIMER when  else
+		 -- OTHERS => '0';
+--ALE_IN<=ALE when EOP_tmp ='1' else
+	---	ALE_Dma;
+		  
 	cs1 <= decoder_out(0);
 	cs2 <= decoder_out(1);
 	cs3 <= decoder_out(2);
@@ -153,13 +186,22 @@ BEGIN
 	barcode_in_tmp <= '1' WHEN barcode_in = '1' ELSE '0';
 	barcode_in_not_tmp <= '0' WHEN barcode_in = '1' ELSE '1';
 
-	PROCESS (clk)
+	PROCESS (clk )
 	BEGIN
-		IF (rising_edge(clk) AND STRSCAN = '1') THEN
-			barcode_out <= Mem_out;
-		ELSE
+		--IF (EOP_tmp ='1' ) THEN
+		--	iF(delay=7) then
+				--BUS_AD<=x"0002";
+		--		ALE_Dma<='1';
+		--		wait for 25ns;
+		--		barcode_out <= Mem_out;
+---wait;
+			--	delay <= 0;
+			--else
+				--delay <=delay +1;
+			--end if;
+		--ELSE
 			barcode_out <= (OTHERS => 'Z');
-		END IF;
+		--END IF;
 	END PROCESS;
 	White : Timer8254
 	GENERIC MAP(size => width_bus_AD)
@@ -226,26 +268,34 @@ BEGIN
 		A0 => '0',
 		INTR => EOP
 	);
-	Dmem : ram
-	GENERIC MAP(
-		d_width => width_bus_AD, --width of each data word
-		size => mem_size --number of data words the memory can store
-	)
+	
+	
+	
+	
+	
+	
+	Dmem : Memory_interleaving
+	GENERIC MAP (
+		d_width  => 16, --width of each data word
+		add_width =>13,
+		size => 8000) --number of data words the memory can store
 	PORT MAP(
 		clk => clk,
-		wr_ena => RW,
-		cs5 => '1', --cs5,
-		BHE => '1', --BHE,
-		address => ALE_out(12 DOWNTO 0), -- INTEGER RANGE 0 TO size-1; --address to write/read
+		wr_ena =>RW,
+		cs5 =>'1',
+		BHE =>'0',
+		address => ALE_out(12 DOWNTO 0), --	INTEGER RANGE 0 TO size-1;             --address to write/read
 		data_in => BUS_AD, --input data to write
-		data_out => Mem_out,
-		reset => reset); --output data read
+		data_out =>Mem_out, --output data read
+		reset => reset );
+
+		
 
 	ALE_MD : ale_module
 	GENERIC MAP(size => width_bus_AD)
 	PORT MAP(
 		addr_data => BUS_AD,
-		en => ALE_Dma, --ALE??,
+		en => ALE_Dma, --ALE_Dma??,
 		reset => reset,
 		addr_out => ALE_out);
 END arc_TOP;

@@ -11,7 +11,7 @@ end readFile;
 architecture arc_readFile of readFile is
       signal input:           std_logic ;
     signal clk:             std_logic := '0';
-    constant clk_period:    time := 10 ns;
+    constant clk_period:    time := 200 ns;
 begin
 	input_top<=input;
 

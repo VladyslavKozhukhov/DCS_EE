@@ -28,16 +28,37 @@ SEL_WIDTH   :NATURAL
 			EOP : OUT std_logic
 		);
 	END COMPONENT;
-
+component readFile 
+	PORT(
+	input_top : OUT std_logic
+	);
+END component;
+component writeFile 
+	PORT(
+input_top : in std_logic_vector(15 DOWNTO 0);
+clk : in std_logic
+	);
+END component;
 	SIGNAL width_bus_AD : INTEGER := 16;
 	SIGNAL address_size : INTEGER := 13;
 
 SIGNAL mem_size : INTEGER:=8000;
  SIGNAL SEL_WIDTH   :NATURAL := 3;
-	SIGNAL STRSCAN, clk, reset, barcode_in, HOLDA, INT, INTA, ALE, BHE, HOLD, EOP : std_logic;
+	SIGNAL  clk,clkWrite, reset, barcode_in, HOLDA, INT, INTA, ALE, BHE, HOLD, EOP : std_logic;
 	SIGNAL barcode_out : std_logic_vector(15 DOWNTO 0);
+	signal mem_out:std_logic_vector(15 DOWNTO 0);
+	SIGNAL STRSCAN:std_logic:='0';
+signal input_read:  std_logic;
 
 BEGIN
+STRSCAN<='1' when reset = '0' and EOP = '0' else 
+			'0';
+			
+RD:readFile PORT MAP(barcode_in);
+			
+			
+			
+			
 	dut : TOP
 	GENERIC MAP(
 		width_bus_AD => width_bus_AD,
@@ -59,49 +80,6 @@ BEGIN
 		HOLD => HOLD,
 		EOP => EOP
 	);
----input fake----
-input_proc : PROCESS
-begin
-barcode_in <= '1';
-wait for 200ns;
-barcode_in <= '1';
-wait for 200ns;
-barcode_in <= '1';
-wait for 200ns;
-barcode_in <= '1';
-wait for 200ns;
-barcode_in <= '1';
-wait for 200ns;
-barcode_in <= '1';
-------
-wait for 200ns;
-barcode_in <= '0';  --4
-wait for 200ns;
-barcode_in <= '1';  --4
-wait for 200ns;
-barcode_in <= '0';  --4
-wait for 200ns;
-barcode_in <= '1';
-wait for 200ns;
-barcode_in <= '1';  --8
-wait for 200ns;
-barcode_in <= '0';
-wait for 200ns;
-barcode_in <= '0';  --8
-wait for 200ns;
-barcode_in <= '1';  --4
-wait for 200ns;
-barcode_in <= '0';
-wait for 200ns;
-barcode_in <= '0';  --8
-wait for 200ns;
-barcode_in <= '1';  --4
-wait for 200ns;
-barcode_in <= '0';  --4
-wait for 200ns;
-barcode_in <= '1';  --4
-wait;
-end PROCESS;
 
 	-- Clock process definitions
 	clock_process : PROCESS
@@ -111,6 +89,15 @@ end PROCESS;
 		clk <= '1';
 		WAIT FOR 25 ns;
 	END PROCESS;
+---clock writeFile
+	clockWrite_process : PROCESS
+	BEGIN
+		clkWrite <= '0';
+		WAIT FOR 50 ns;
+		clkWrite <= '1';
+		WAIT FOR 50 ns;
+	END PROCESS;
+
 
 	gen_HOLDA : PROCESS
 	BEGIN
@@ -127,7 +114,7 @@ end PROCESS;
 		WAIT FOR 50 ns;
 		IF (EOP = '1') THEN
 			INTA <= '1';
-			STRSCAN <= '0';
+			--STRSCAN <= '0';
 		ELSE
 			INTA <= '0';
 		END IF;
@@ -136,11 +123,21 @@ end PROCESS;
 	main_process : PROCESS
 	BEGIN
 		reset <= '1'; -- reset system
+		--STRSCAN <= '0';
 		WAIT FOR 75 ns;
 		reset <= '0';
-		WAIT FOR 25 ns;
-		STRSCAN <= '1';
+		--		STRSCAN <= '1';
+
+		--WAIT FOR 25 ns;
 		wait;
 	END PROCESS;
+	
+	write_process: PROCESS
+	BEGIN
+	mem_out<=barcode_out;
+	WAIT FOR 200 ns;
+	end PROCESS;
+	
+WD:writeFile PORT MAP(barcode_out, clk );
 
 END Behavioral;

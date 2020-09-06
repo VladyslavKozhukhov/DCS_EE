@@ -33,7 +33,7 @@ BEGIN
 			ram <= (OTHERS => (OTHERS => '0'));
 			data_out <= (OTHERS => '0');
 
-		ELSIF (clk'EVENT AND clk = '1') THEN
+		ELSIF (clk'EVENT AND clk = '0') THEN
 			enable_odd <= cs5 AND address(0);
 			enable_even <= cs5 AND BHE;
 			tmp_data := ram(to_integer(unsigned(address)));

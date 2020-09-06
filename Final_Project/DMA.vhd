@@ -29,7 +29,7 @@ ARCHITECTURE DMA_behavioral OF DMA IS
 BEGIN
 	PROCESS (clk)
 		VARIABLE transfers_count : INTEGER := 0;
-		CONSTANT MAX_DMA_REQUESTS : INTEGER := 50;--99;
+		CONSTANT MAX_DMA_REQUESTS : INTEGER := 38;--99;
 	BEGIN
 		IF (rst = '1') THEN
 			HOLD <= '0';
@@ -57,7 +57,7 @@ BEGIN
 						address <= std_logic_vector(to_unsigned(transfers_count, address'length)); -- put MEM address
 						ALE <= '1';
 						RW <= '0';
-						transfers_count := transfers_count + 1;
+						transfers_count := transfers_count + 2;
 						-- EOP
 						IF (transfers_count = MAX_DMA_REQUESTS) THEN
 							transfers_count := 0;

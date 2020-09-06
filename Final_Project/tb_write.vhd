@@ -22,9 +22,9 @@ WD:writeFile PORT MAP(input_read, clk );
 clock_process :process
 begin
      clk <= '0';
-     wait for 25 ns;
+     wait for 100 ns;
      clk <= '1';
-     wait for 25 ns;
+     wait for 100 ns;
 end process;
 
 
