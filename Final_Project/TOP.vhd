@@ -129,7 +129,7 @@ ARCHITECTURE arc_TOP OF TOP IS
 		wr_ena : IN STD_LOGIC; --write enable
 		cs5 : IN STD_LOGIC;
 		BHE : IN STD_LOGIC;
-		address : IN std_logic_vector(add_width - 1 DOWNTO 0);--	INTEGER RANGE 0 TO size-1;             --address to write/read
+		address : IN std_logic_vector(d_width - 1 DOWNTO 0);--	INTEGER RANGE 0 TO size-1;             --address to write/read
 		data_in : IN STD_LOGIC_VECTOR(d_width - 1 DOWNTO 0); --input data to write
 		data_out : OUT STD_LOGIC_VECTOR(d_width - 1 DOWNTO 0); --output data read
 		reset : IN STD_LOGIC);
@@ -207,7 +207,7 @@ ALE_IN<=ALE_Dma or ALE;
 	PORT MAP(
 		barcode_in => barcode_in_tmp,
 		clk => clk,
-		en => '1', --CS1,
+		en => CS1,
 		DACK => DACK0,
 		rst => reset,
 		captured_width => BUS_AD,
@@ -219,7 +219,7 @@ ALE_IN<=ALE_Dma or ALE;
 	PORT MAP(
 		barcode_in => barcode_in_not_tmp,
 		clk => clk,
-		en => '1', --CS2,
+		en => CS2,
 		DACK => DACK1,
 		rst => reset,
 		captured_width => BUS_AD,
@@ -241,7 +241,7 @@ ALE_IN<=ALE_Dma or ALE;
 		DACK1 => DACK1,
 		HOLDA => HOLDA,
 		HOLD => HOLD,
-		address => BUS_AD(12 DOWNTO 0),
+		address => BUS_AD,--(12 DOWNTO 0),
 		RW => RW,
 		ALE => ALE_Dma,
 		EOP => EOP_tmp
@@ -262,7 +262,7 @@ ALE_IN<=ALE_Dma or ALE;
 		clk => clk,
 		rst => reset,
 		INTA => INTA,
-		CS5 => '1', --cs5,
+		CS5 => cs5,
 		IR0 => EOP_tmp,
 		A0 => '0',
 		INTR => EOP
@@ -281,7 +281,7 @@ ALE_IN<=ALE_Dma or ALE;
 	PORT MAP(
 		clk => clk,
 		wr_ena =>RW,
-		cs5 =>'1',
+		cs5 =>cs4,
 		BHE =>'0',
 		address => ALE_out(12 DOWNTO 0), --	INTEGER RANGE 0 TO size-1;             --address to write/read
 		data_in => BUS_AD, --input data to write

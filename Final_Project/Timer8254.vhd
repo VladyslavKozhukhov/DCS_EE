@@ -51,9 +51,13 @@ BEGIN
 			DREQ <= '0';
 			captured_width <= (OTHERS => 'Z');
 		ELSE
-			IF (en = '1') THEN
+			--IF (en = '1') THEN
 				IF (DACK = '1') THEN
+					if(en ='1')then
 					captured_width <= dff_out;
+					else
+						captured_width <=  (OTHERS => 'Z');
+						end if;
 					DREQ <= '0';
 					--subtruct_result <= (OTHERS => 'Z');
 				ELSIF (rising_DFF_out'event) THEN
@@ -66,20 +70,22 @@ BEGIN
 					captured_width <= (OTHERS => 'Z');
 				ELSE
 					--subtruct_result <= (OTHERS => 'Z');
+				--	subtruct_result <= (OTHERS => '0');
+				    DREQ <= '0';
 					captured_width <= (OTHERS => 'Z');
 				END IF;
-			ELSE
-				subtruct_result <= (OTHERS => '0');
-				DREQ <= '0';
-				captured_width <= (OTHERS => 'Z');
-			END IF;
+			--ELSE
+			--	subtruct_result <= (OTHERS => '0');
+			--	DREQ <= '0';
+			--	captured_width <= (OTHERS => 'Z');
+			--END IF;
 		END IF;
 	END PROCESS;
 
 	timer_internal_counter : counter
 	GENERIC MAP(size => size)
 	PORT MAP(
-		en => en,
+		en => '1',
 		clk => clk,
 		rst => rst,
 		count_out => count_out);

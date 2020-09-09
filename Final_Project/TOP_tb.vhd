@@ -53,7 +53,7 @@ SIGNAL mem_size : INTEGER:=8000;
 	SIGNAL STRSCAN:std_logic:='0';
 	SIGNAL BUS_AD:STD_LOGIC_VECTOR(width_bus_AD - 1 DOWNTO 0);
 
-	SIGNAL en_write:std_logic:='0';
+	SIGNAL write_to_file_en:std_logic:='0';
 signal input_read:  std_logic;
 		signal addr_count : INTEGER := 0;
 
@@ -90,7 +90,7 @@ RD:readFile PORT MAP(barcode_in);
 	);
 
 	
-WD:writeFile PORT MAP(barcode_out, clk,en_write );
+WD:writeFile PORT MAP(barcode_out, clk,write_to_file_en );
 
 	read_procc: PROCESS
 	BEGIN 
@@ -98,16 +98,17 @@ WD:writeFile PORT MAP(barcode_out, clk,en_write );
 	BUS_AD<=(others =>'Z');
 	wait until EOP = '1';
 	for I in 0 to 20 loop
-		en_write<='0';
+		write_to_file_en<='0';
 		ALE <='1';
-		BUS_AD<=std_logic_vector(to_unsigned(addr_count, BUS_AD'length));
+		BUS_AD<="001"&std_logic_vector(to_unsigned(addr_count, (BUS_AD'length-3)));
 		wait for 50 ns;
+		--BUS_AD(15 downto 13)<="011";--cs mem
 		addr_count<=addr_count+2;
 		ALE <='0';
-		en_write<='1';
+		write_to_file_en<='1';
 		wait for 50 ns;
 		if(I =20) then
-		en_write <='0';
+		write_to_file_en <='0';
 		end if;
 	end loop;
 	--en_write<='0';

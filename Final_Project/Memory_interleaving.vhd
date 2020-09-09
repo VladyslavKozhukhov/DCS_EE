@@ -36,7 +36,7 @@ BEGIN
 			--ram_odd <= (OTHERS => (OTHERS => '0'));
 			data_out <= (OTHERS => 'Z');
 
-		ELSIF (rising_edge(clk) and cs5 = '1') THEN
+		ELSIF (rising_edge(clk)) THEN
 			IF (wr_ena = '1') THEN	--write
 				data_out <= (OTHERS => 'Z');
 				IF (BHE = '0' and address(0) = '0') THEN	-- Write whole word
@@ -49,7 +49,7 @@ BEGIN
 				--ELSE -- (BHE = '1' and address(0) = '1')	-- None
 					
 				END IF;
-			ELSE	-- read
+			ELsif (cs5 ='1') then	-- read
 				IF (BHE = '0' and address(0) = '0') THEN	-- Read whole word
 					data_out <= ram(to_integer(unsigned(address))+1) & ram(to_integer(unsigned(address)));
 				ELSIF (BHE = '0' and address(0) = '1') THEN	--  Upper byte from odd address
