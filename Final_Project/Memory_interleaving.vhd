@@ -49,7 +49,7 @@ BEGIN
 				--ELSE -- (BHE = '1' and address(0) = '1')	-- None
 					
 				END IF;
-			ELsif (cs5 ='1') then	-- read
+			ELSif (cs5 = '1') then	-- read
 				IF (BHE = '0' and address(0) = '0') THEN	-- Read whole word
 					data_out <= ram(to_integer(unsigned(address))+1) & ram(to_integer(unsigned(address)));
 				ELSIF (BHE = '0' and address(0) = '1') THEN	--  Upper byte from odd address

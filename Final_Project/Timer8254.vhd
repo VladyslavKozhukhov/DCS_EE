@@ -8,7 +8,9 @@ ENTITY Timer8254 IS
 		barcode_in : IN std_logic;
 		clk : IN std_logic;
 		en : IN std_logic;
-		DACK : IN std_logic;
+		EOP : IN std_logic;
+		DACK_main : IN std_logic;
+		DACK_sec : IN std_logic;
 		rst : IN std_logic;
 		captured_width : OUT std_logic_vector(size - 1 DOWNTO 0);
 		DREQ : OUT std_logic);
@@ -44,7 +46,7 @@ ARCHITECTURE Timer8254_behavioral OF Timer8254 IS
 BEGIN
 	barcode_in_not <= NOT barcode_in;
 
-	PROCESS (rst, DACK, rising_DFF_out)
+	PROCESS (EOP,rst, DACK_main, rising_DFF_out, DACK_sec)
 	BEGIN
 		IF (rst = '1') THEN
 			subtruct_result <= (OTHERS => '0');
@@ -52,12 +54,8 @@ BEGIN
 			captured_width <= (OTHERS => 'Z');
 		ELSE
 			--IF (en = '1') THEN
-				IF (DACK = '1') THEN
-					if(en ='1')then
-					captured_width <= dff_out;
-					else
-						captured_width <=  (OTHERS => 'Z');
-						end if;
+				IF (falling_edge(DACK_main) and en = '1') THEN
+					captured_width(12 downto 0) <= dff_out(12 downto 0);
 					DREQ <= '0';
 					--subtruct_result <= (OTHERS => 'Z');
 				ELSIF (rising_DFF_out'event) THEN
@@ -69,16 +67,12 @@ BEGIN
 					--out_result <= subtruct_result;
 					captured_width <= (OTHERS => 'Z');
 				ELSE
+				  subtruct_result <= (OTHERS => '0');
+				  DREQ <= '0';
 					--subtruct_result <= (OTHERS => 'Z');
-				--	subtruct_result <= (OTHERS => '0');
-				    DREQ <= '0';
 					captured_width <= (OTHERS => 'Z');
 				END IF;
-			--ELSE
-			--	subtruct_result <= (OTHERS => '0');
-			--	DREQ <= '0';
-			--	captured_width <= (OTHERS => 'Z');
-			--END IF;
+
 		END IF;
 	END PROCESS;
 

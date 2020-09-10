@@ -17,7 +17,7 @@ begin
 
 WRITE_FILE: process (clk,en)
   variable VEC_LINE : line;
-  CONSTANT file_write_loc :string(1 to 45):="C:\Users\VladKo\Documents\MSc\BGU\Barcode.txt";
+  CONSTANT file_write_loc :string(1 to 57):="C:\Users\BAR\Desktop\DCS\DCS_EE\Final_Project\Barcode.txt";
 	file output_file : text open write_mode is file_write_loc;
 begin
   if rising_edge(clk)and en ='1' then

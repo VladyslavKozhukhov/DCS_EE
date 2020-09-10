@@ -19,7 +19,7 @@ begin
 
 read_proc: 
     process
-	CONSTANT file_read_loc :string(1 to 45):="C:\Users\VladKo\Documents\MSc\BGU\Scanner.txt";
+	CONSTANT file_read_loc :string(1 to 57):="C:\Users\BAR\Desktop\DCS\DCS_EE\Final_Project\scanner.txt";
 	file input_file : text open read_mode is file_read_loc;
      --   file input_file: TEXT is in "Scanner.txt";
      variable rdline:    LINE;

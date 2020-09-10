@@ -23,12 +23,12 @@ BEGIN
 		IF (reset = '1') THEN
 			addr_out_tmp := 0;
 		ELSIF (en = '1' or en_main = '1') THEN
-			addr_out_tmp := to_integer(unsigned(addr_data(15 downto 13)));
+			addr_out_tmp := to_integer(unsigned(addr_data(12 downto 0)));
 		ELSE
 			addr_out_tmp := addr_out_tmp;
 		END IF;
 add_tmp<=addr_out_tmp;
 	END PROCESS;
-		addr_out <= std_logic_vector(to_unsigned(add_tmp,3))&addr_data(12 downto 0);
+		addr_out <= std_logic_vector(to_unsigned(add_tmp, addr_out'length));
 
 END arc_ale_module;

@@ -82,7 +82,7 @@ ARCHITECTURE arc_TOP OF TOP IS
 			HOLD : OUT std_logic;
 			DACK0 : OUT std_logic;
 			DACK1 : OUT std_logic;
-			address : OUT std_logic_vector(address_size - 1 DOWNTO 0);
+			address : OUT std_logic_vector(size - 1 DOWNTO 0);
 			RW : OUT std_logic;
 			ALE : OUT std_logic;
 			EOP : OUT std_logic
@@ -95,7 +95,9 @@ ARCHITECTURE arc_TOP OF TOP IS
 			barcode_in : IN std_logic;
 			clk : IN std_logic;
 			en : IN std_logic;
-			DACK : IN std_logic;
+			EOP : IN std_logic;
+			DACK_main : IN std_logic;
+			DACK_sec : IN std_logic;
 			rst : IN std_logic;
 			captured_width : OUT std_logic_vector(size - 1 DOWNTO 0);
 			DREQ : OUT std_logic
@@ -129,7 +131,7 @@ ARCHITECTURE arc_TOP OF TOP IS
 		wr_ena : IN STD_LOGIC; --write enable
 		cs5 : IN STD_LOGIC;
 		BHE : IN STD_LOGIC;
-		address : IN std_logic_vector(d_width - 1 DOWNTO 0);--	INTEGER RANGE 0 TO size-1;             --address to write/read
+		address : IN std_logic_vector(add_width - 1 DOWNTO 0);--	INTEGER RANGE 0 TO size-1;             --address to write/read
 		data_in : IN STD_LOGIC_VECTOR(d_width - 1 DOWNTO 0); --input data to write
 		data_out : OUT STD_LOGIC_VECTOR(d_width - 1 DOWNTO 0); --output data read
 		reset : IN STD_LOGIC);
@@ -207,8 +209,10 @@ ALE_IN<=ALE_Dma or ALE;
 	PORT MAP(
 		barcode_in => barcode_in_tmp,
 		clk => clk,
-		en => CS1,
-		DACK => DACK0,
+		en => cs1,
+		EOP => EOP_tmp,
+		DACK_main => DACK0,
+		DACK_sec => DACK1,
 		rst => reset,
 		captured_width => BUS_AD,
 		DREQ => DREQ0
@@ -219,8 +223,10 @@ ALE_IN<=ALE_Dma or ALE;
 	PORT MAP(
 		barcode_in => barcode_in_not_tmp,
 		clk => clk,
-		en => CS2,
-		DACK => DACK1,
+		en => cs2,
+		EOP => EOP_tmp,
+		DACK_main => DACK1,
+		DACK_sec => DACK0,
 		rst => reset,
 		captured_width => BUS_AD,
 		DREQ => DREQ1
@@ -241,7 +247,7 @@ ALE_IN<=ALE_Dma or ALE;
 		DACK1 => DACK1,
 		HOLDA => HOLDA,
 		HOLD => HOLD,
-		address => BUS_AD,--(12 DOWNTO 0),
+		address => BUS_AD(15 DOWNTO 0),
 		RW => RW,
 		ALE => ALE_Dma,
 		EOP => EOP_tmp
@@ -251,7 +257,7 @@ ALE_IN<=ALE_Dma or ALE;
 		SEL_WIDTH => SEL_WIDTH
 	)
 	PORT MAP(
-		sel => ALE_out(15 DOWNTO 13),
+		sel => BUS_AD(15 DOWNTO 13),
 		decoder_out => decoder_out
 	);
 	IC : interrupt_controller
@@ -262,7 +268,7 @@ ALE_IN<=ALE_Dma or ALE;
 		clk => clk,
 		rst => reset,
 		INTA => INTA,
-		CS5 => cs5,
+		CS5 => '1', --cs5,
 		IR0 => EOP_tmp,
 		A0 => '0',
 		INTR => EOP
@@ -281,8 +287,8 @@ ALE_IN<=ALE_Dma or ALE;
 	PORT MAP(
 		clk => clk,
 		wr_ena =>RW,
-		cs5 =>cs4,
-		BHE =>'0',
+		cs5 =>cs5,
+		BHE =>'1',
 		address => ALE_out(12 DOWNTO 0), --	INTEGER RANGE 0 TO size-1;             --address to write/read
 		data_in => BUS_AD, --input data to write
 		data_out =>Mem_out, --output data read
