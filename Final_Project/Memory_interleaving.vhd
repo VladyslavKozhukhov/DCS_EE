@@ -5,14 +5,14 @@ USE IEEE.Numeric_Std.ALL;
 ENTITY Memory_interleaving IS
 	GENERIC (
 		d_width : INTEGER := 16; --width of each data word
-		add_width : INTEGER := 13;
+	    address_size : INTEGER := 13; --addr size
 		size : INTEGER := 8000); --number of data words the memory can store
 	PORT (
 		clk : IN STD_LOGIC; --system clock
 		wr_ena : IN STD_LOGIC; --write enable
-		cs5 : IN STD_LOGIC;
+		en : IN STD_LOGIC;
 		BHE : IN STD_LOGIC;
-		address : IN std_logic_vector(add_width - 1 DOWNTO 0);--	INTEGER RANGE 0 TO size-1;             --address to write/read
+		address : IN std_logic_vector(address_size - 1 DOWNTO 0);--	INTEGER RANGE 0 TO size-1;             --address to write/read
 		data_in : IN STD_LOGIC_VECTOR(d_width - 1 DOWNTO 0); --input data to write
 		data_out : OUT STD_LOGIC_VECTOR(d_width - 1 DOWNTO 0); --output data read
 		reset : IN STD_LOGIC);
@@ -49,7 +49,7 @@ BEGIN
 				--ELSE -- (BHE = '1' and address(0) = '1')	-- None
 					
 				END IF;
-			ELSif (cs5 = '1') then	-- read
+			ELSif (en = '1') then	-- read
 				IF (BHE = '0' and address(0) = '0') THEN	-- Read whole word
 					data_out <= ram(to_integer(unsigned(address))+1) & ram(to_integer(unsigned(address)));
 				ELSIF (BHE = '0' and address(0) = '1') THEN	--  Upper byte from odd address

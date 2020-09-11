@@ -3,12 +3,12 @@ use IEEE.STD_LOGIC_1164.ALL;
 USE iEEE.std_logic_arith.ALL;
 
 ENTITY DFF IS
-  GENERIC (size: integer:=16);
+  GENERIC (d_width: integer:=16);
   PORT (	
-		D: 	  		IN std_logic_vector(size-1 downto 0);
+		D: 	  		IN std_logic_vector(d_width-1 downto 0);
 		clk:		  IN std_logic;
 		rst:		  IN std_logic;
-		Q: 			  BUFFER std_logic_vector(size-1 downto 0));
+		Q: 			  BUFFER std_logic_vector(d_width-1 downto 0));
 end DFF;
 
 architecture dff_behavioral of DFF is

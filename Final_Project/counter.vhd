@@ -5,11 +5,11 @@ use ieee.std_logic_arith.all;
 use ieee.numeric_std.all;
 
 ENTITY counter IS
-  GENERIC (size: integer:=16);
+  GENERIC (d_width: integer:=16);
   PORT (clk:            IN  std_logic;
         rst:            IN  std_logic;
         en:             IN  std_logic;
-        count_out:      OUT std_logic_vector(size-1 downto 0)
+        count_out:      OUT std_logic_vector(d_width-1 downto 0)
       );
 END counter;
 
@@ -17,7 +17,7 @@ architecture counter_arch of counter is
 begin
   process(clk)
     variable count: integer:=0;
-    constant maxCount: integer:= (2**size-1);
+    constant maxCount: integer:= (2**d_width-1);
     begin
       if (rising_edge (clk)) then
         if (rst = '1') then

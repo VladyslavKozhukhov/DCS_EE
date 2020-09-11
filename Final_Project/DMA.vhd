@@ -4,8 +4,9 @@ USE ieee.numeric_std.ALL;
 
 ENTITY DMA IS
 	GENERIC (
-		size : INTEGER := 16;
-		address_size : INTEGER := 7
+		width_bus_AD : INTEGER := 20;
+		sel_width : INTEGER :=3;
+		d_width : INTEGER := 16
 	);
 	PORT (
 		clk : IN std_logic;
@@ -17,7 +18,7 @@ ENTITY DMA IS
 		HOLD : OUT std_logic;
 		DACK0 : OUT std_logic;
 		DACK1 : OUT std_logic;
-		address : OUT std_logic_vector(size - 1 DOWNTO 0);
+		address : OUT std_logic_vector(width_bus_AD - 1 DOWNTO 0);
 		RW : OUT std_logic;
 		ALE : BUFFER std_logic;
 		EOP : OUT std_logic
@@ -35,7 +36,8 @@ BEGIN
 			HOLD <= '0';
 			DACK0 <= '0';
 			DACK1 <= '0';
-			address <= "111" & "ZZZZZZZZZZZZZ";
+			address(width_bus_AD-1 downto  (width_bus_AD-sel_width)) <= "111";---ZZZZZZZZZZZZ 
+			address((width_bus_AD -sel_width -1) downto 0) <= (OTHERS => 'Z'); 
 			RW <= '0';
 			transfers_count := 0; -- reset counter
 			ALE <= '0';
@@ -52,20 +54,20 @@ BEGIN
 						ELSE -- DREQ1 == '1'
 							DACK1 <= '0';
 						END IF;
-						address(15 DOWNTO 13) <= "111"; -- disconnect from bus
-						address(12 DOWNTO 0) <= (OTHERS => 'Z');
+						address(width_bus_AD-1 downto  (width_bus_AD-sel_width)) <= "111";---ZZZZZZZZZZZZ 
+						address((width_bus_AD -sel_width -1) downto 0) <= (OTHERS => 'Z'); 
 						RW <= '0';
-					ELSIF (DREQ0 = '1' AND HOLDA = '1') THEN--
+					ELSIF (DREQ0 = '1' AND HOLDA = '1') THEN
 						HOLD <= '0';
-						address <= "000" & std_logic_vector(to_unsigned(transfers_count, (address'LENGTH - 3))); -- put MEM address
+						address <= "000" & std_logic_vector(to_unsigned(transfers_count, (address'LENGTH - sel_width))); -- put MEM address
 						ALE <= '1';
 						RW <= '0';
 						DACK0 <= '1';
 						DACK1 <= '0';
 						transfers_count := transfers_count + 2;
-					ELSIF (DREQ1 = '1' AND HOLDA = '1') THEN--
+					ELSIF (DREQ1 = '1' AND HOLDA = '1') THEN
 						HOLD <= '0';
-						address <= "001" & std_logic_vector(to_unsigned(transfers_count, (address'LENGTH - 3))); -- put MEM address
+						address <= "001" & std_logic_vector(to_unsigned(transfers_count, (address'LENGTH - sel_width))); -- put MEM address
 						ALE <= '1';
 						RW <= '0';
 						DACK0 <= '0';
@@ -74,13 +76,10 @@ BEGIN
 					ELSE
 						ALE <= '0';
 	  
-						--RW<='1';
 					END IF;
-					-- EOP
 					ELSE
 						transfers_count := 0;
 						EOP <= '1';
-						--address(15 DOWNTO 13) <= "100";--interrupt
 						address <= (OTHERS => 'Z');
 					END IF;
  
@@ -88,7 +87,6 @@ BEGIN
 					HOLD <= '0';
 					DACK0 <= '0';
 					DACK1 <= '0';
-					--address(15 DOWNTO 13) <= "111"; -- disconnect from bus
 					address <= (OTHERS => 'Z');
 					IF (ALE = '1') then
 					   RW <= '1';
@@ -102,7 +100,6 @@ BEGIN
 				HOLD <= '0';
 				DACK0 <= '0';
 				DACK1 <= '0';
-				--address(15 DOWNTO 13) <= "111";-- disconnect from bus
 				address <= (OTHERS => 'Z');
 				RW <= '1';
 			END IF;
