@@ -24,7 +24,7 @@ WRITE_FILE: process (clk,en)
 
 	file output_file : text open write_mode is file_write_loc;
 begin
-  if rising_edge(clk)and en ='1' then
+  if falling_edge(clk)and en ='1' then
     write (VEC_LINE, to_integer(unsigned(input_top)));
     writeline (output_file, VEC_LINE);
   end if;

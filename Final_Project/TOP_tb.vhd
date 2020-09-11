@@ -50,7 +50,7 @@ ARCHITECTURE Behavioral OF TOP_tb IS
 	SIGNAL mem_size : INTEGER := 8000;
 	SIGNAL SEL_WIDTH : NATURAL := 3;
 	SIGNAL en_file_write : std_logic := '0';
-	SIGNAL addr_count : INTEGER := 0;
+	SIGNAL addr_count : INTEGER := 2;
 	
 	SIGNAL clk, clkWrite, reset, barcode_in, HOLDA, INT, INTA, ALE, BHE, HOLD, EOP : std_logic;
 	SIGNAL barcode_out : std_logic_vector(15 DOWNTO 0);
@@ -96,7 +96,7 @@ BEGIN
 	WD : writeFile GENERIC MAP(d_width=>d_width)	PORT MAP(barcode_out, clk, en_file_write);
 
 	read_form_mem_procc : PROCESS
-	variable num_Iteration : INTEGER:= 20; -------#iter
+	variable num_Iteration : INTEGER:= 108; -------#iter
 	BEGIN
 		ALE <= '0';
 		BUS_AD <= (OTHERS => 'Z');
