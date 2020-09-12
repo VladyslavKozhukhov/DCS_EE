@@ -25,39 +25,39 @@ ARCHITECTURE Timer8254_behavioral OF Timer8254 IS
 	SIGNAL subtruct_result : std_logic_vector(d_width - 1 DOWNTO 0);
 	SIGNAL dff_out : std_logic_vector(d_width - 1 DOWNTO 0);
 
----COUNTER-----
-COMPONENT counter
-	GENERIC (d_width : INTEGER := 16);
-	PORT (
-		clk : IN std_logic;
-		rst : IN std_logic;
-		en : IN std_logic;
-		count_out : OUT std_logic_vector(d_width - 1 DOWNTO 0)
-	);
-END COMPONENT;
-----------------
+	---COUNTER-----
+	COMPONENT counter
+		GENERIC (d_width : INTEGER := 16);
+		PORT (
+			clk : IN std_logic;
+			rst : IN std_logic;
+			en : IN std_logic;
+			count_out : OUT std_logic_vector(d_width - 1 DOWNTO 0)
+		);
+	END COMPONENT;
+	----------------
 
------DFF---------
-COMPONENT DFF IS
-	GENERIC (d_width : INTEGER := 16);
-	PORT (
-		D : IN std_logic_vector(d_width - 1 DOWNTO 0);
-		clk : IN std_logic;
-		rst : IN std_logic;
-		Q : OUT std_logic_vector(d_width - 1 DOWNTO 0));
-END COMPONENT;
-------------------
-	
+	-----DFF---------
+	COMPONENT DFF IS
+		GENERIC (d_width : INTEGER := 16);
+		PORT (
+			D : IN std_logic_vector(d_width - 1 DOWNTO 0);
+			clk : IN std_logic;
+			rst : IN std_logic;
+			Q : OUT std_logic_vector(d_width - 1 DOWNTO 0));
+	END COMPONENT;
+	------------------
+
 BEGIN
 	barcode_in_not <= NOT barcode_in;
-	PROCESS (EOP,rst, DACK_main, rising_DFF_out, DACK_sec)
+	PROCESS (EOP, rst, DACK_main, rising_DFF_out, DACK_sec)
 	BEGIN
 		IF (rst = '1') THEN
 			subtruct_result <= (OTHERS => '0');
 			DREQ <= '0';
 			captured_width <= (OTHERS => 'Z');
 		ELSE
-			IF (falling_edge(DACK_main) and en = '1') THEN
+			IF (falling_edge(DACK_main) AND en = '1') THEN
 				captured_width <= dff_out;
 				DREQ <= '0';
 			ELSIF (rising_DFF_out'event) THEN
@@ -65,10 +65,10 @@ BEGIN
 				DREQ <= '1';
 				captured_width <= (OTHERS => 'Z');
 			ELSE
-			   subtruct_result <= (OTHERS => '0');
-			   DREQ <= '0';
-			   captured_width <= (OTHERS => 'Z');
-		END IF;
+				subtruct_result <= (OTHERS => '0');
+				DREQ <= '0';
+				captured_width <= (OTHERS => 'Z');
+			END IF;
 
 		END IF;
 	END PROCESS;
@@ -80,8 +80,6 @@ BEGIN
 		clk => clk,
 		rst => rst,
 		count_out => count_out);
-
-
 	rising_DFF : DFF
 	GENERIC MAP(d_width => d_width)
 	PORT MAP(
@@ -89,8 +87,6 @@ BEGIN
 		clk => barcode_in,
 		rst => rst,
 		Q => rising_DFF_out);
-
-
 	falling_DFF : DFF
 	GENERIC MAP(d_width => d_width)
 	PORT MAP(
@@ -98,8 +94,6 @@ BEGIN
 		clk => barcode_in_not,
 		rst => rst,
 		Q => falling_DFF_out);
-
-
 	result_DFF : DFF
 	GENERIC MAP(d_width => d_width)
 	PORT MAP(

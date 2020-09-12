@@ -35,9 +35,9 @@ ARCHITECTURE Behavioral OF DMA_tb IS
 
 BEGIN
 	dut : DMA
-		GENERIC MAP(size => size, address_size => address_size)
+	GENERIC MAP(size => size, address_size => address_size)
 	PORT MAP(clk => clk, rst => rst, en => en, DREQ0 => DREQ0, DREQ1 => DREQ1, HOLDA => HOLDA, HOLD => HOLD, DACK0 => DACK0, DACK1 => DACK1, address => address, RW => RW, EOP => EOP, ALE => ALE);
- 
+
 	-- Clock process definitions
 	clock_process : PROCESS
 	BEGIN
@@ -72,7 +72,7 @@ BEGIN
 	BEGIN
 		rst <= '1';
 		en <= '1';
-		WAIT FOR 100 ns; 
+		WAIT FOR 100 ns;
 		rst <= '0';
 		WAIT FOR 500 ns;
 		en <= '0';

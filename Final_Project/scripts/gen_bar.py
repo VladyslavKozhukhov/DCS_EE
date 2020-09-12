@@ -43,6 +43,8 @@ def nw2digits(nw):
 
 barcode, barcode_txt = create_barcode(gen_mapping())
 print(barcode)
+with open("../Scanner.txt","w") as fp:
+	fp.write(barcode)
 print(barcode_txt)
 
 print(gen_mapping())

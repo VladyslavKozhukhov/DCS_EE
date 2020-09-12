@@ -1,52 +1,48 @@
-library ieee;
-use ieee.std_logic_1164.all;
-use std.textio.all;
+LIBRARY ieee;
+USE ieee.std_logic_1164.ALL;
+USE std.textio.ALL;
 
-entity readFile is
-PORT(
-input_top : OUT std_logic
-);
-end readFile;
+ENTITY readFile IS
+	PORT (
+		input_top : OUT std_logic
+	);
+END readFile;
 
-architecture arc_readFile of readFile is
-      signal input:           std_logic ;
-    signal clk:             std_logic := '0';
-    constant clk_period:    time := 200 ns;
-begin
-	input_top<=input;
+ARCHITECTURE arc_readFile OF readFile IS
+	SIGNAL input : std_logic;
+	SIGNAL clk : std_logic := '0';
+	CONSTANT clk_period : TIME := 200 ns;
+BEGIN
+	input_top <= input;
 
+	read_proc :
+	PROCESS
+		CONSTANT file_read_loc :string(1 to 61):="C:\Users\BAR\Desktop\DCS_new\DCS_EE\Final_Project\scanner.txt";
+		-- CONSTANT file_read_loc : STRING(1 TO 45) := "C:\Users\VladKo\Documents\MSc\BGU\Scanner.txt";
 
+		FILE input_file : text OPEN read_mode IS file_read_loc;
+		-- file input_file: TEXT is in "Scanner.txt";
+		VARIABLE rdline : LINE;
 
-read_proc: 
-    process
---	CONSTANT file_read_loc :string(1 to 57):="C:\Users\BAR\Desktop\DCS\DCS_EE\Final_Project\scanner.txt";
-		CONSTANT file_read_loc :string(1 to 45):="C:\Users\VladKo\Documents\MSc\BGU\Scanner.txt";
+	BEGIN
+		WHILE NOT endfile(input_file) LOOP
+			readline(input_file, rdline);
+			FOR j IN rdline'RANGE LOOP
+				IF rdline(j) = '1' THEN
+					input <= '1';
+				ELSE
+					input <= '0';
+				END IF;
+				WAIT UNTIL falling_edge(clk);
+			END LOOP;
+		END LOOP;
+		WAIT;
+	END PROCESS;
+	CLOCK :
+	PROCESS
+	BEGIN
+		WAIT FOR clk_period/2;
+		clk <= NOT clk;
+	END PROCESS;
 
-	file input_file : text open read_mode is file_read_loc;
-     --   file input_file: TEXT is in "Scanner.txt";
-     variable rdline:    LINE;
-
-    begin       
-        while not endfile(input_file) loop
-            readline(input_file, rdline);
-            for j in rdline'range loop
-                if rdline(j) = '1' then 
-                    input <= '1';
-                else
-                    input <= '0'; 
-                end if;
-                wait until falling_edge(clk);
-            end loop;
-        end loop;
-        wait;  
-    end process;
-
- 
-CLOCK:
-    process
-    begin
-        wait for clk_period/2;
-        clk <= not clk;
-    end process;
-	
-end arc_readFile;
+END arc_readFile;

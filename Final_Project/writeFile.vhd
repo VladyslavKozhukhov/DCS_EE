@@ -1,34 +1,32 @@
-library ieee;
-use ieee.std_logic_1164.all;
-use std.textio.all;
-use ieee.numeric_std.all;
+LIBRARY ieee;
+USE ieee.std_logic_1164.ALL;
+USE std.textio.ALL;
+USE ieee.numeric_std.ALL;
 
-entity writeFile is
-	GENERIC(d_width:INTEGER:=16);
+ENTITY writeFile IS
+	GENERIC (d_width : INTEGER := 16);
 
-PORT(
-input_top : in std_logic_vector(15 DOWNTO 0);
-clk : in std_logic;
-en : in std_logic
-);
-end writeFile;
+	PORT (
+		input_top : IN std_logic_vector(15 DOWNTO 0);
+		clk : IN std_logic;
+		en : IN std_logic
+	);
+END writeFile;
 
-architecture arc_writeFile of writeFile is
---	signal out_int : integer;
-begin
+ARCHITECTURE arc_writeFile OF writeFile IS
 
-WRITE_FILE: process (clk,en)
-  variable VEC_LINE : line;
-  --CONSTANT file_write_loc :string(1 to 57):="C:\Users\BAR\Desktop\DCS\DCS_EE\Final_Project\Barcode.txt";
-    CONSTANT file_write_loc :string(1 to 45):="C:\Users\VladKo\Documents\MSc\BGU\Barcode.txt";
+BEGIN
+	WRITE_FILE : PROCESS (clk, en)
+		VARIABLE VEC_LINE : line;
+		CONSTANT file_write_loc : STRING(1 TO 61) := "C:\Users\BAR\Desktop\DCS_new\DCS_EE\Final_Project\Barcode.txt";
+		--CONSTANT file_write_loc :string(1 to 45):="C:\Users\VladKo\Documents\MSc\BGU\Barcode.txt";
 
-	file output_file : text open write_mode is file_write_loc;
-begin
-  if falling_edge(clk)and en ='1' then
-    write (VEC_LINE, to_integer(unsigned(input_top)));
-    writeline (output_file, VEC_LINE);
-  end if;
-end process WRITE_FILE;
-
-
-end arc_writeFile;
+		FILE output_file : text OPEN write_mode IS file_write_loc;
+	BEGIN
+		IF falling_edge(clk)AND en = '1' THEN
+			write (VEC_LINE, to_integer(unsigned(input_top)));
+			writeline (output_file, VEC_LINE);
+		END IF;
+	END PROCESS WRITE_FILE;
+	
+END arc_writeFile;

@@ -26,7 +26,7 @@ ARCHITECTURE Behavioral OF TOP_tb IS
 			ALE : IN std_logic;
 			BUS_AD : INOUT STD_LOGIC_VECTOR(width_bus_AD - 1 DOWNTO 0);
 			BHE : IN std_logic;
-			barcode_out : OUT std_logic_vector(d_width-1 DOWNTO 0);
+			barcode_out : OUT std_logic_vector(d_width - 1 DOWNTO 0);
 			HOLD : OUT std_logic;
 			EOP : OUT std_logic
 		);
@@ -37,9 +37,9 @@ ARCHITECTURE Behavioral OF TOP_tb IS
 		);
 	END COMPONENT;
 	COMPONENT writeFile
-	GENERIC(d_width:INTEGER);
+		GENERIC (d_width : INTEGER);
 		PORT (
-			input_top : IN std_logic_vector(d_width-1 DOWNTO 0);
+			input_top : IN std_logic_vector(d_width - 1 DOWNTO 0);
 			clk : IN std_logic;
 			en : IN std_logic
 		);
@@ -51,52 +51,46 @@ ARCHITECTURE Behavioral OF TOP_tb IS
 	SIGNAL SEL_WIDTH : NATURAL := 3;
 	SIGNAL en_file_write : std_logic := '0';
 	SIGNAL addr_count : INTEGER := 2;
-	
+
 	SIGNAL clk, clkWrite, reset, barcode_in, HOLDA, INT, INTA, ALE, BHE, HOLD, EOP : std_logic;
 	SIGNAL barcode_out : std_logic_vector(15 DOWNTO 0);
 	SIGNAL STRSCAN : std_logic := '0';
 	SIGNAL BUS_AD : STD_LOGIC_VECTOR(width_bus_AD - 1 DOWNTO 0);
 
-
-
 BEGIN
 	STRSCAN <= '1' WHEN reset = '0' AND EOP = '0' ELSE
-	           '0';
- 
-	RD : readFile PORT MAP(barcode_in);
- 
- 
- 
- 
-	dut : TOP
-		GENERIC MAP(
-		width_bus_AD => width_bus_AD, 
-		address_size => address_size, 
-		mem_size => mem_size, 
-		d_width => d_width, 
-		SEL_WIDTH => SEL_WIDTH
-		)
-		PORT MAP(
-			STRSCAN => STRSCAN, 
-			clk => clk, 
-			reset => reset, 
-			barcode_in => barcode_in, 
-			HOLDA => HOLDA, 
-			INT => INT, 
-			INTA => INTA, 
-			ALE => ALE, 
-			BHE => BHE, 
-			BUS_AD => BUS_AD, 
-			barcode_out => barcode_out, 
-			HOLD => HOLD, 
-			EOP => EOP
-		);
+		'0';
 
- 
-	WD : writeFile GENERIC MAP(d_width=>d_width)	PORT MAP(barcode_out, clk, en_file_write);
+	RD : readFile PORT MAP(barcode_in);
+
+	dut : TOP
+	GENERIC MAP(
+		width_bus_AD => width_bus_AD,
+		address_size => address_size,
+		mem_size => mem_size,
+		d_width => d_width,
+		SEL_WIDTH => SEL_WIDTH
+	)
+	PORT MAP(
+		STRSCAN => STRSCAN,
+		clk => clk,
+		reset => reset,
+		barcode_in => barcode_in,
+		HOLDA => HOLDA,
+		INT => INT,
+		INTA => INTA,
+		ALE => ALE,
+		BHE => BHE,
+		BUS_AD => BUS_AD,
+		barcode_out => barcode_out,
+		HOLD => HOLD,
+		EOP => EOP
+	);
+
+	WD : writeFile GENERIC MAP(d_width => d_width) PORT MAP(barcode_out, clk, en_file_write);
 
 	read_form_mem_procc : PROCESS
-	variable num_Iteration : INTEGER:= 108; -------#iter
+		VARIABLE num_Iteration : INTEGER := 108; -------#iter
 	BEGIN
 		ALE <= '0';
 		BUS_AD <= (OTHERS => 'Z');
@@ -104,21 +98,21 @@ BEGIN
 		WAIT FOR 50ns;
 
 		FOR I IN 0 TO num_Iteration LOOP
-		
+
 			BUS_AD(width_bus_AD - 1 DOWNTO width_bus_AD - SEL_WIDTH) <= "100";--mem
 			en_file_write <= '0';
 			ALE <= '1';
-			BUS_AD(address_size-1 DOWNTO 0) <= std_logic_vector(to_unsigned(addr_count, BUS_AD(address_size-1 DOWNTO 0)'length));
-			
+			BUS_AD(address_size - 1 DOWNTO 0) <= std_logic_vector(to_unsigned(addr_count, BUS_AD(address_size - 1 DOWNTO 0)'length));
+
 			WAIT FOR 50 ns;
-			
-			BUS_AD(address_size-1 DOWNTO 0) <= (OTHERS => 'Z');
+
+			BUS_AD(address_size - 1 DOWNTO 0) <= (OTHERS => 'Z');
 			addr_count <= addr_count + 2;
 			ALE <= '0';
 			en_file_write <= '1';
-				
+
 			WAIT FOR 50 ns;
-						
+
 		END LOOP;
 		en_file_write <= '0';
 		WAIT;
@@ -132,7 +126,7 @@ BEGIN
 		clk <= '1';
 		WAIT FOR 25 ns;
 	END PROCESS;
-	
+
 	---clock writeFile
 	clockWrite_process : PROCESS
 	BEGIN
@@ -141,7 +135,7 @@ BEGIN
 		clkWrite <= '1';
 		WAIT FOR 50 ns;
 	END PROCESS;
-	
+
 	gen_HOLDA : PROCESS
 	BEGIN
 		WAIT FOR 50 ns;
@@ -170,7 +164,5 @@ BEGIN
 		reset <= '0';
 		WAIT;
 	END PROCESS;
- 
- 
 
 END Behavioral;
